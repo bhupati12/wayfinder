@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\db-entities-guides\GuidesDbEntities\GuidesDbEntities.csproj" />
+    <ProjectReference Include="..\..\..\domains-shared\guides\DomainModels.Guides\DomainModels.Guides.csproj" />
+    <ProjectReference Include="..\..\..\connector-llm\Llm.Core\Llm.Core.csproj" />
+    <ProjectReference Include="..\..\..\connector-llm\Llm.Infrastructure\Llm.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,26 @@
+# Local dependencies only. The two .NET services run from your IDE or `dotnet run`.
+# Start: docker compose up -d      Stop: docker compose down      Wipe data: docker compose down -v
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: wayfinder
+      POSTGRES_PASSWORD: wayfinder_local_only
+      POSTGRES_DB: wayfinder
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wayfinder -d wayfinder"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
