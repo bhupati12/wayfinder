@@ -64,10 +64,10 @@ The scaffold in this repository covers this phase.
 
 What is left for you:
 
-- [ ] Run `git init` and make the first commit
-- [ ] Run `docker compose up -d` and confirm both containers are healthy
-- [ ] Run `dotnet build src/dotnet/Wayfinder.sln`
-- [ ] Run SearchService and open `/healthz`
+- [x] Run `git init` and make the first commit
+- [x] Run `docker compose up -d` and confirm both containers are healthy
+- [x] Run `dotnet build src/dotnet/Wayfinder.sln`
+- [x] Run SearchService and open `/healthz`
 
 **Done when:** the solution builds with zero warnings and `/healthz` returns `Healthy`.
 
@@ -84,22 +84,22 @@ source article. Start with 2,000 to 5,000 articles (one region is enough).
 
 **Where:** `GuidesDbEntities`, `GuidesImporter`.
 
-- [ ] Add EF Core and the Npgsql provider to `GuidesDbEntities`
-- [ ] Entities in `Models/`:
+- [x] Add EF Core and the Npgsql provider to `GuidesDbEntities`
+- [x] Entities in `Models/`:
   - `GuideArticle`: id, title, URL, raw text hash, last ingested time
   - `GuideChunk`: id, article id, section heading, position, text, token count, content hash
   - `IngestionRun`: id, started, finished, counts of articles added, updated, skipped, failed
-- [ ] `DAL/GuidesContext.cs`, entity configurations in `Configurations/`, first migration
-- [ ] Options class for ingestion settings (dump path, article limit, chunk size, overlap)
-- [ ] `IDumpReader`: stream the XML dump without loading it all into memory
-- [ ] `IWikitextCleaner`: strip templates, links, tables and markup down to plain text
-- [ ] `IChunker`: split by section heading, then into chunks of about 300 to 500 tokens with a small
+- [x] `DAL/GuidesContext.cs`, entity configurations in `Configurations/`, first migration
+- [x] Options class for ingestion settings (dump path, article limit, chunk size, overlap)
+- [x] `IDumpReader`: stream the XML dump without loading it all into memory
+- [x] `IWikitextCleaner`: strip templates, links, tables and markup down to plain text
+- [x] `IChunker`: split by section heading, then into chunks of about 300 to 500 tokens with a small
       overlap; never split in the middle of a sentence
-- [ ] `IngestGuidesJob` (`ICronJob`, name `ingestGuides`): read, clean, chunk, upsert
-- [ ] Idempotency: compare the content hash; skip unchanged articles, replace chunks of changed ones
+- [x] `IngestGuidesJob` (`ICronJob`, name `ingestGuides`): read, clean, chunk, upsert
+- [x] Idempotency: compare the content hash; skip unchanged articles, replace chunks of changed ones
       inside a transaction
-- [ ] Write in batches and log progress every N articles
-- [ ] Unit tests for the cleaner and the chunker (table-driven, with real article samples)
+- [x] Write in batches and log progress every N articles
+- [x] Unit tests for the cleaner and the chunker (table-driven, with real article samples)
 
 **Done when:**
 
@@ -108,6 +108,25 @@ source article. Start with 2,000 to 5,000 articles (one region is enough).
 - the `IngestionRun` row shows the counts
 
 **Learn first:** tokens versus characters, why chunk size and overlap matter for retrieval.
+
+**Result (17 November 2026, dump of 1 November 2026):** regions East Asia and Southeast Asia,
+3,896 articles, 33,192 chunks, 10.9 million tokens (cl100k_base). Chunk median 342 tokens, maximum
+499; 0.5% are under 100 tokens. First run 3 min 11 s (3,896 added); second run 0 added, 0 updated,
+3,896 skipped. Settings: min 300, max 500, overlap 50 tokens.
+
+Decisions worth knowing:
+
+- Articles are keyed on the MediaWiki page id, so a renamed article is updated, not duplicated.
+- Besides the raw text hash, each article stores a processing signature (cleaner version plus
+  chunk settings). Changing chunk size or overlap rebuilds every article on the next run, which is
+  what the Phase 5 chunk-size experiment needs.
+- Listing templates (`{{see}}`, `{{eat}}`, `{{sleep}}`, ...) are rendered as one line with name,
+  description, address, hours and price instead of being stripped, because they hold most of the
+  practical content. Other templates are dropped.
+- Short sections merge with the next one, heading included; a full chunk breaks at the start of a
+  line where possible, so a listing stays whole. Overlap is whole lines at a line break and
+  trailing sentences mid-paragraph, never across a heading.
+- `migrateDatabase` is a job too, so a deploy can run migrations the same way it runs ingestion.
 
 ---
 

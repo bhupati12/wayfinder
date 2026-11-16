@@ -1,0 +1,2 @@
+# Keep fixtures byte-identical on every OS: tests compare dump text with these files.
+* text eol=lf

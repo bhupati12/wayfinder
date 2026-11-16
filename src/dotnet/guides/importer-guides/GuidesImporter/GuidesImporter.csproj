@@ -11,6 +11,19 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>wayfinder-guides-importer</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GuidesImporter.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- bzip2 decompression for the Wikivoyage dump. -->
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+    <!-- cl100k_base token counts, the encoding used by OpenAI's text-embedding-3 models. -->
+    <PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.1" />
+    <PackageReference Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" Version="2.0.1" />
+  </ItemGroup>
 
 </Project>

@@ -1,0 +1,75 @@
+{{pagebanner|Aba prefecture Wikivoyage banner.jpg|pgname=Aba}}
+'''Aba Tibetan & Qiang Autonomous Prefecture''' (Mandarin Chinese: 阿坝藏族羌族自治州; ''Ābà Zàngzú Qiāngzú Zìzhìzhōu'', or Ngawa Tibetan and Qiang Autonomous Prefecture (Tibetan: རྔ་བ་བོད་རིགས་དང་ཆང་རིགས་རང་སྐྱོང་ཁུལ་), is located in north-western [[Sichuan|Sichuan province]].
+
+==Cities==
+{{mapframe}}
+{{mapshape}}
+* {{marker|type=city|name=[[Aba (China)|Aba (or Ngawa)]]|wikidata=Q304182}} — there are 37 monasteries and nunneries in the area, two of the largest of which are in the city
+* {{marker|type=city|name=[[Barkam]]|wikidata=Q4860890}} — in nearby Zhuokeji village is a watchtower fortress once occupied by a local chieftain where Mao Zedong stayed at the watchtower several times during the Long March
+<!-- * {{marker|type=city|name=[[Heishui]]|wikidata=}}-->
+<!-- * {{marker|type=city|name=[[Hongyuan]]|wikidata=}}-->
+<!-- * {{marker|type=city|name=[[Jinchuan]]|wikidata=}}-->
+* {{marker|type=city|name=[[Langmusi]]|wikidata=Q13990333}} — a sleepy village surrounded by mountains that give off a very much alpine flair reminiscent of rural Austria or Bavaria and perfect for hiking and horsetreking
+<!-- * {{marker|type=city|name=[[Lixian]]|wikidata=}}-->
+* {{marker|type=city|name=[[Maoxian]]|wikidata=Q612790}} — has the most concentrated Qiang population in China
+<!-- * {{marker|type=city|name=[[Nanping (Sichuan)|Nanping]]|wikidata=}}-->
+<!-- * {{marker|type=city|name=[[Rangtang]]|wikidata=}}-->
+* {{marker|type=city|name=[[Ruoergai]]|wikidata=Q218429}} — 
+* {{marker|type=city|name=[[Songpan]]|wikidata=Q1339425}} — a base-camp for exploring the nearby national parks and Tibetan villages
+* {{marker|type=city|name=[[Wenchuan]]|wikidata=Q1015140}} — less crowded than the more well-known destinations in Ngawa Prefecture and has some good ‘off-the-beaten-track’ areas to explore
+<!-- * {{marker|type=city|name=[[Xiaojin]]|wikidata=}}-->
+
+==Other destinations==
+Aba Prefecture contains 3 of the 6 World Natural Heritage Sites in the all of China, making Aba the premier destination in China for nature-based and ecotourism. There is also great cultural diversity, with a majority Tibetan population, elaborate Tibetan Buddhist temples (e.g. Langmusi on the border with Gansu), picturesque grasslands and beautiful mountain scenery. There is also a significant Qiang minority population (particularly in Maoxian county).
+
+The 3 UNESCO World Natural Heritage Sites are:
+
+* {{marker|type=other|name=[[Jiuzhaigou Nature Reserve]]|wikidata=Q4111}} — known as the habitat of giant pandas and for its many multi-level waterfalls and colorful lakes
+* {{marker|type=other|name=[[Huanglongsi National Park]]|wikidata=Q4107}} — a mountain that is relatively easy to climb with natural mineral pools and lakes forming 
+* {{marker|type=other|name=[[Siguniangshan National Parks]]|wikidata=Q832362}} — its mammals include the Sichuan golden monkey, white-lipped deer, clouded leopard, snow leopard and occasional giant panda
+
+Other national parks include:
+*Muni Valley national park
+*Baihe Golden Monkey Reserve
+*Wanglang National Park
+*Wolong Nature Reserve — sanctuary for endangered pandas
+
+==Understand==
+Aba Tibetan and Qiang Autonomous Prefecture is located in the north-west of Sichuan Province, at the upper reaches of the Chang jiang River and the Yellow River, with an area of 84,200 square kilometers. Under its jurisdiction, there are 13 counties. The prefecture lies in the historic northern Tibetan region of Amdo. Besides the obvious Han Chinese and Tibetan influences you may encounter Hui and Qiang minorities as well. The further you get from Songpan and Chengdu the stronger the minority influences get.
+
+Within Aba, there is a diversity of ethnic groups, including Tibetan (52.3%), Han (26.7%), Qiang (17.7%) and Chinese Muslim (Hui) (3.2%).
+
+==Get in==
+Jiuzhai Huanglong Airport ({{IATA|JZH}})
+
+==Get around==
+
+==See==
+[[Aba (China)|Aba]] town is home to several monasteries and nunneries.
+
+The Qiang villages and natural scenery are big draws to [[Wenchuan]].
+
+==Do==
+
+You can get a horse trekking tour from [[Langmusi]] or [[Songpan]] into the beautiful surrounding grasslands, hills, and valleys. On the overnight treks, you will have the opportunity to stay in a tent with Tibetan nomads. 
+
+The Zang Mii Tibetan Opera cultural performance hall, in Zhang Zha township of Jiuzhaigou county, hosts nightly (outside of winter) spectacular and elaborate performances which tell a story of a pilgrim's journey in an intimate and entertaining, colourful and exciting way. The theme of the opera has deep cultural meaning and significance and conveys a proud sense of the Tibetan people and their beliefs.
+
+==Eat==
+Try the Tibetan round baked walnut bread ('hetao da bing') or the delicious round-baked cake-like bread baked by the Hui Muslim minorities in Songpan and Wenchuan.
+
+The Qiang are famous for collecting wild vegetables and also for their cured ham (腊肉).
+
+==Drink==
+The Qiang have a traditional mild alcohol called ‘za jiu’ (咂酒) or ‘sucking wine’. At festivals this is drunk through communal long bamboo straws from a single, large jar. However, it can also be requested at meals as a bottled drink. 
+
+==Stay safe==
+
+==Go next==
+
+{{outlineregion}}
+{{IsPartOf|Sichuan}}
+
+
+
+{{geo|31.901|102.22055|zoom=12}}
