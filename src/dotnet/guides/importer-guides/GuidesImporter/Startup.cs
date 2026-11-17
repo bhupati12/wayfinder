@@ -1,3 +1,4 @@
+using GuidesDbEntities.Configurations;
 using GuidesDbEntities.DAL;
 using GuidesImporter.Application.CronJobs;
 using GuidesImporter.Application.Options;
@@ -5,6 +6,8 @@ using GuidesImporter.Application.Services;
 using GuidesImporter.Application.Services.Interfaces;
 using GuidesImporter.Database.Services;
 using GuidesImporter.Database.Services.Interfaces;
+using Llm.Infrastructure.Extensions;
+using Llm.Infrastructure.Options;
 
 namespace GuidesImporter;
 
@@ -46,12 +49,29 @@ public static class Startup
         services.AddScoped<IGuideArticleRepository, GuideArticleRepository>();
         services.AddScoped<IIngestionRunRepository, IngestionRunRepository>();
 
+        // Phase 2: embeddings. The client's vector length must match the database column.
+        services.AddEmbeddingClient(builder.Configuration);
+        services
+            .AddOptions<EmbeddingOptions>()
+            .Validate(
+                o => o.Dimensions == GuideChunkConfiguration.EmbeddingDimensions,
+                $"Embeddings:Dimensions must be {GuideChunkConfiguration.EmbeddingDimensions} to match the "
+                    + "guide_chunks.embedding column; a model with another size needs a migration."
+            );
+        services
+            .AddOptions<EmbedChunksOptions>()
+            .Bind(builder.Configuration.GetSection(EmbedChunksOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddScoped<IChunkEmbeddingService, ChunkEmbeddingService>();
+        services.AddScoped<IChunkEmbeddingRepository, ChunkEmbeddingRepository>();
+        services.AddScoped<IEmbeddingRunRepository, EmbeddingRunRepository>();
+
         // Jobs: register each ICronJob here, then it can be run by name from the command line.
         services.AddScoped<JobRunner>();
         services.AddScoped<ICronJob, MigrateDatabaseJob>();
         services.AddScoped<ICronJob, IngestGuidesJob>();
-
-        // Phase 2: embedding client and embedding job.
+        services.AddScoped<ICronJob, EmbedChunksJob>();
     }
 
     public static void Configure(WebApplication app)

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 
 #nullable disable
 
@@ -20,7 +21,79 @@ namespace GuidesDbEntities.Migrations
                 .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("GuidesDbEntities.Models.EmbeddingRun", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ChunksEmbedded")
+                        .HasColumnType("integer")
+                        .HasColumnName("chunks_embedded");
+
+                    b.Property<int>("ChunksFailed")
+                        .HasColumnType("integer")
+                        .HasColumnName("chunks_failed");
+
+                    b.Property<int>("ChunksPending")
+                        .HasColumnType("integer")
+                        .HasColumnName("chunks_pending");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
+                    b.Property<decimal>("EstimatedCostUsd")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("numeric(12,6)")
+                        .HasColumnName("estimated_cost_usd");
+
+                    b.Property<DateTimeOffset?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<long>("InputTokens")
+                        .HasColumnType("bigint")
+                        .HasColumnName("input_tokens");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("model");
+
+                    b.Property<int>("Requests")
+                        .HasColumnType("integer")
+                        .HasColumnName("requests");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<bool>("TokensReportedByProvider")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tokens_reported_by_provider");
+
+                    b.HasKey("Id")
+                        .HasName("pk_embedding_runs");
+
+                    b.HasIndex("StartedAt")
+                        .HasDatabaseName("ix_embedding_runs_started_at");
+
+                    b.ToTable("embedding_runs", (string)null);
+                });
 
             modelBuilder.Entity("GuidesDbEntities.Models.GuideArticle", b =>
                 {
@@ -102,6 +175,25 @@ namespace GuidesDbEntities.Migrations
                         .HasColumnName("content_hash")
                         .IsFixedLength();
 
+                    b.Property<DateTimeOffset?>("EmbeddedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("embedded_at");
+
+                    b.Property<string>("EmbeddedContentHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("embedded_content_hash")
+                        .IsFixedLength();
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(768)")
+                        .HasColumnName("embedding");
+
+                    b.Property<string>("EmbeddingModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("embedding_model");
+
                     b.Property<int>("Position")
                         .HasColumnType("integer")
                         .HasColumnName("position");
@@ -126,6 +218,14 @@ namespace GuidesDbEntities.Migrations
 
                     b.HasIndex("ContentHash")
                         .HasDatabaseName("ix_guide_chunks_content_hash");
+
+                    b.HasIndex("Embedding")
+                        .HasDatabaseName("ix_guide_chunks_embedding")
+                        .HasAnnotation("Npgsql:StorageParameter:ef_construction", 64)
+                        .HasAnnotation("Npgsql:StorageParameter:m", 16);
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Embedding"), "hnsw");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Embedding"), new[] { "vector_cosine_ops" });
 
                     b.HasIndex("ArticleId", "Position")
                         .IsUnique()

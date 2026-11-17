@@ -14,8 +14,11 @@ public class GuidesContext : DbContext
 
     public DbSet<IngestionRun> IngestionRuns => Set<IngestionRun>();
 
+    public DbSet<EmbeddingRun> EmbeddingRuns => Set<EmbeddingRun>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("vector");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(GuidesContext).Assembly);
     }
 }

@@ -136,20 +136,20 @@ Decisions worth knowing:
 
 **Where:** `Llm.Core`, `Llm.Infrastructure`, `GuidesDbEntities`, `GuidesImporter`.
 
-- [ ] `Llm.Core/Interfaces/IEmbeddingClient`: `EmbedAsync(IReadOnlyList<string>, CancellationToken)`
-- [ ] `Llm.Infrastructure`: one implementation that calls an embedding API through
+- [x] `Llm.Core/Interfaces/IEmbeddingClient`: `EmbedAsync(IReadOnlyList<string>, CancellationToken)`
+- [x] `Llm.Infrastructure`: one implementation that calls an embedding API through
       `IHttpClientFactory` (or through `Microsoft.Extensions.AI`'s `IEmbeddingGenerator`)
-- [ ] Options for model name, dimensions, batch size, API key (key comes from user secrets or an
+- [x] Options for model name, dimensions, batch size, API key (key comes from user secrets or an
       environment variable)
-- [ ] Resilience on the HTTP client: per-attempt timeout, retries with exponential backoff on 429
+- [x] Resilience on the HTTP client: per-attempt timeout, retries with exponential backoff on 429
       and 5xx, circuit breaker (`Microsoft.Extensions.Http.Resilience` or Polly)
-- [ ] Enable the `vector` extension in a migration; add an `Embedding` column to `GuideChunk`
+- [x] Enable the `vector` extension in a migration; add an `Embedding` column to `GuideChunk`
       (`Pgvector.EntityFrameworkCore`) plus `EmbeddingModel` and `EmbeddedAt`
-- [ ] HNSW index on the vector column with cosine distance
-- [ ] `EmbedChunksJob` (name `embedChunks`): select chunks with no embedding or a stale content
+- [x] HNSW index on the vector column with cosine distance
+- [x] `EmbedChunksJob` (name `embedChunks`): select chunks with no embedding or a stale content
       hash, embed in batches, save; safe to stop and resume
-- [ ] Record tokens used per run so you know the cost
-- [ ] Tests: fake `IEmbeddingClient` for the job; one test for retry behaviour against a stub handler
+- [x] Record tokens used per run so you know the cost
+- [x] Tests: fake `IEmbeddingClient` for the job; one test for retry behaviour against a stub handler
 
 **Done when:** all chunks have embeddings, a re-run embeds zero chunks, and you can state what the
 full embedding run cost.

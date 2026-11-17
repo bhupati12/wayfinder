@@ -1,3 +1,4 @@
+using DomainModels.Guides.Models;
 using GuidesImporter.Application.Helpers;
 using GuidesImporter.Application.Models;
 using GuidesImporter.Application.Options;
@@ -17,7 +18,7 @@ public sealed class ArticleProcessor : IArticleProcessor
         this.cleaner = cleaner;
         this.chunker = chunker;
         this.options = options.Value;
-        ProcessingSignature = Hashing.Sha256Hex($"{cleaner.Version}|{chunker.Signature}");
+        ProcessingSignature = Hashing.Sha256Hex($"{cleaner.Version}|{chunker.Signature}|{ChunkEmbeddingText.Version}");
     }
 
     public string ProcessingSignature { get; }
@@ -27,7 +28,13 @@ public sealed class ArticleProcessor : IArticleProcessor
         var title = WikiTitles.Normalize(page.Title);
         var chunks = chunker
             .Chunk(cleaner.Clean(page.Text))
-            .Select(c => new PreparedChunk(c.SectionHeading, c.Position, c.Text, c.TokenCount, Hashing.Sha256Hex(c.Text)))
+            .Select(c => new PreparedChunk(
+                c.SectionHeading,
+                c.Position,
+                c.Text,
+                c.TokenCount,
+                Hashing.Sha256Hex(ChunkEmbeddingText.Build(title, c.SectionHeading, c.Text))
+            ))
             .ToList();
 
         return new PreparedArticle(

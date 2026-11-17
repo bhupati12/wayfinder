@@ -23,7 +23,7 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
         return await db
             .Articles.AsNoTracking()
             .Where(a => pageIds.Contains(a.PageId))
-            .Select(a => new { a.PageId, State = new StoredArticleState(a.Id, a.RawTextHash, a.ProcessingSignature) })
+            .Select(a => new { a.PageId, State = new StoredArticleState(a.Id, a.Title, a.RawTextHash, a.ProcessingSignature) })
             .ToDictionaryAsync(x => x.PageId, x => x.State, cancellationToken);
     }
 
@@ -45,13 +45,14 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
                     .ToDictionaryAsync(a => a.PageId, cancellationToken);
 
                 var articleIds = existing.Values.Select(a => a.Id).ToList();
+                var reusable = await LoadReusableEmbeddingsAsync(articleIds, cancellationToken);
                 await db.Chunks.Where(c => articleIds.Contains(c.ArticleId)).ExecuteDeleteAsync(cancellationToken);
 
                 foreach (var article in updated)
                 {
                     var entity = existing[article.PageId];
                     Apply(entity, article, ingestedAt);
-                    entity.Chunks = article.Chunks.Select(ToEntity).ToList();
+                    entity.Chunks = article.Chunks.Select(c => ToEntity(c, reusable)).ToList();
                 }
             }
 
@@ -66,7 +67,7 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
                     ProcessingSignature = article.ProcessingSignature,
                 };
                 Apply(entity, article, ingestedAt);
-                entity.Chunks = article.Chunks.Select(ToEntity).ToList();
+                entity.Chunks = article.Chunks.Select(c => ToEntity(c, null)).ToList();
                 db.Articles.Add(entity);
             }
 
@@ -90,8 +91,24 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
         entity.LastIngestedAt = ingestedAt;
     }
 
-    private static GuideChunk ToEntity(PreparedChunk chunk) =>
-        new()
+    /// <summary>Current embeddings of the articles' chunks, keyed by content hash.</summary>
+    private async Task<Dictionary<string, ReusableEmbedding>> LoadReusableEmbeddingsAsync(
+        List<long> articleIds,
+        CancellationToken cancellationToken
+    )
+    {
+        var rows = await db
+            .Chunks.AsNoTracking()
+            .Where(c => articleIds.Contains(c.ArticleId) && c.Embedding != null && c.EmbeddedContentHash == c.ContentHash)
+            .Select(c => new ReusableEmbedding(c.ContentHash, c.Embedding!, c.EmbeddingModel!, c.EmbeddedAt))
+            .ToListAsync(cancellationToken);
+
+        return rows.DistinctBy(r => r.ContentHash).ToDictionary(r => r.ContentHash);
+    }
+
+    private static GuideChunk ToEntity(PreparedChunk chunk, Dictionary<string, ReusableEmbedding>? reusable)
+    {
+        var entity = new GuideChunk
         {
             SectionHeading = chunk.SectionHeading,
             Position = chunk.Position,
@@ -99,4 +116,17 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
             TokenCount = chunk.TokenCount,
             ContentHash = chunk.ContentHash,
         };
+
+        if (reusable is not null && reusable.TryGetValue(chunk.ContentHash, out var old))
+        {
+            entity.Embedding = old.Embedding;
+            entity.EmbeddingModel = old.Model;
+            entity.EmbeddedContentHash = old.ContentHash;
+            entity.EmbeddedAt = old.EmbeddedAt;
+        }
+
+        return entity;
+    }
+
+    private sealed record ReusableEmbedding(string ContentHash, Pgvector.Vector Embedding, string Model, DateTimeOffset? EmbeddedAt);
 }

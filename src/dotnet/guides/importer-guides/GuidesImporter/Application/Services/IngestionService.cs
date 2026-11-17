@@ -11,8 +11,8 @@ using Microsoft.Extensions.Options;
 namespace GuidesImporter.Application.Services;
 
 /// <summary>
-/// Read, clean, chunk, upsert. Idempotent: an article is rewritten only when its raw text hash or
-/// processing signature changed, and its chunks are replaced inside the same transaction as the
+/// Read, clean, chunk, upsert. Idempotent: an article is rewritten only when its raw text hash,
+/// processing signature or title changed, and its chunks are replaced inside the same transaction as the
 /// article row, so a crash never leaves an article with half of its chunks.
 /// </summary>
 public sealed partial class IngestionService : IIngestionService
@@ -192,7 +192,11 @@ public sealed partial class IngestionService : IIngestionService
             {
                 added.Add(article);
             }
-            else if (state.RawTextHash != article.RawTextHash || state.ProcessingSignature != article.ProcessingSignature)
+            else if (
+                state.RawTextHash != article.RawTextHash
+                || state.ProcessingSignature != article.ProcessingSignature
+                || state.Title != article.Title // renamed without a text change
+            )
             {
                 updated.Add(article);
             }

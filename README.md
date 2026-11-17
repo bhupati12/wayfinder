@@ -3,7 +3,7 @@
 A question-answering API over public travel guides. Ask a question, get an answer that cites the
 guide passages it came from (retrieval-augmented generation).
 
-Status: Phase 1 done (guide articles ingested and chunked). The build plan is in
+Status: Phase 2 done (guide articles ingested, chunked and embedded). The build plan is in
 [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
 ## Run locally
@@ -61,6 +61,44 @@ Ingestion settings live in the `Ingestion` section of
 Asia and Southeast Asia regions (about 3,900 articles); clear `Regions` to ingest everything.
 Any setting can be overridden with an environment variable, for example
 `Ingestion__ArticleLimit=100`.
+
+### Embed the chunks
+
+Embeddings come from a free local model, `nomic-embed-text` (768 dimensions), served by
+[Ollama](https://ollama.com/). No API key or account is needed and no text leaves the machine.
+
+1. Install Ollama and pull the model:
+
+   ```bash
+   winget install --id Ollama.Ollama --exact
+   ```
+
+   ```bash
+   ollama pull nomic-embed-text
+   ```
+
+2. Start the server. On a laptop with an integrated AMD or Intel GPU, enabling it roughly doubles
+   throughput (Ollama skips integrated GPUs by default):
+
+   ```bash
+   OLLAMA_IGPU_ENABLE=1 ollama serve
+   ```
+
+3. Run the job:
+
+   ```bash
+   dotnet run --project src/dotnet/guides/importer-guides/GuidesImporter -- embedChunks
+   ```
+
+   It embeds every chunk that has no embedding, a stale one, or one from another model, and saves
+   each batch as it goes, so it can be stopped with Ctrl+C and resumed. Each run is recorded in the
+   `embedding_runs` table with its token count and estimated cost. Try a few first with
+   `EmbedChunks__MaxChunks=64`.
+
+The client speaks the OpenAI `/v1/embeddings` API, so a hosted provider is a configuration change
+in the `Embeddings` section (`BaseUrl`, `Model`, `CostPerMillionTokens`, and the API key in user
+secrets as `Embeddings:ApiKey`). A model with a different vector length also needs a migration that
+changes the `guide_chunks.embedding` column.
 
 ### Tests
 

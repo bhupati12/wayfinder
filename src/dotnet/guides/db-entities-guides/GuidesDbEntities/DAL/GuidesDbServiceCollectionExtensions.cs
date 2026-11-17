@@ -21,5 +21,5 @@ public static class GuidesDbServiceCollectionExtensions
     public static DbContextOptionsBuilder Configure(
         DbContextOptionsBuilder options,
         string connectionString
-    ) => options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
+    ) => options.UseNpgsql(connectionString, npgsql => npgsql.UseVector()).UseSnakeCaseNamingConvention();
 }

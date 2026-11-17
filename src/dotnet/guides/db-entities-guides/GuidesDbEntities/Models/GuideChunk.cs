@@ -1,3 +1,5 @@
+using Pgvector;
+
 namespace GuidesDbEntities.Models;
 
 /// <summary>A passage of an article, sized for retrieval (roughly 300 to 500 tokens).</summary>
@@ -19,6 +21,21 @@ public class GuideChunk
 
     public int TokenCount { get; set; }
 
-    /// <summary>SHA-256 (hex) of <see cref="Text"/>. Phase 2 uses it to detect stale embeddings.</summary>
+    /// <summary>
+    /// SHA-256 (hex) of the text that is embedded: article title, section heading and chunk text
+    /// (see DomainModels.Guides.Models.ChunkEmbeddingText). When it differs from
+    /// <see cref="EmbeddedContentHash"/>, the embedding is stale.
+    /// </summary>
     public required string ContentHash { get; set; }
+
+    /// <summary>Embedding vector, or null until the embedChunks job has processed the chunk.</summary>
+    public Vector? Embedding { get; set; }
+
+    /// <summary>Model that produced <see cref="Embedding"/>.</summary>
+    public string? EmbeddingModel { get; set; }
+
+    /// <summary><see cref="ContentHash"/> at the time the embedding was made.</summary>
+    public string? EmbeddedContentHash { get; set; }
+
+    public DateTimeOffset? EmbeddedAt { get; set; }
 }
