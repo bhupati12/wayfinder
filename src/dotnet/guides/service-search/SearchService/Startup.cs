@@ -15,6 +15,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using SearchService.Application.Filters;
+using SearchService.Application.OpenApi;
 using SearchService.Application.Options;
 using SearchService.Application.Security;
 using SearchService.Application.Services;
@@ -30,6 +31,7 @@ public static class Startup
     public const string AskPolicy = "ask";
     public const string SearchPolicy = "search";
     public const string ReadyTag = "ready";
+    public const string SwaggerUiSetting = "ApiDocs:SwaggerUi";
 
     public static void ConfigureServices(WebApplicationBuilder builder)
     {
@@ -39,7 +41,12 @@ public static class Startup
         services
             .AddControllers(o => o.Filters.Add<DisableRequestTimeoutOnResultFilter>())
             .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-        services.AddOpenApi("v1");
+        // The OpenAPI document describes types with the minimal-API JSON options, so enums need the
+        // string converter there too; otherwise SearchMode is documented as a number.
+        services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+        services.AddOpenApi("v1", o =>
+            o.AddDocumentTransformer<ApiKeySecurityTransformer>().AddOperationTransformer<ApiKeySecurityTransformer>()
+        );
         services.AddSingleton(TimeProvider.System);
 
         // Errors: problem details everywhere, never a stack trace, always the correlation id.
@@ -206,6 +213,20 @@ public static class Startup
         app.UseRequestTimeouts();
 
         app.MapOpenApi("/openapi/{documentName}.json");
+        if (app.Configuration.GetValue<bool>(SwaggerUiSetting))
+        {
+            // A page for trying the API by hand: on in Development, off unless asked for elsewhere.
+            app.UseSwaggerUI(o =>
+            {
+                o.SwaggerEndpoint("/openapi/v1.json", "Wayfinder API v1");
+                o.RoutePrefix = "swagger";
+                o.DocumentTitle = "Wayfinder API";
+                o.EnableTryItOutByDefault();
+                o.DisplayRequestDuration();
+            });
+            app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+        }
+
         app.MapControllers();
 
         // Liveness: the process is up (no dependencies). Readiness: it can serve traffic.

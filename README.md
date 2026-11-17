@@ -182,8 +182,14 @@ You need Docker, the .NET 10 SDK and about 3 GB of disk for the models.
    dotnet run --project src/dotnet/guides/service-search/SearchService
    ```
 
-   Then try `http://localhost:5099/api/v1/search?q=night+market+in+Taipei&mode=hybrid` and
-   `http://localhost:5099/healthz/ready`. The OpenAPI document is at `/openapi/v1.json`.
+   Then open `http://localhost:5099/swagger` to try every endpoint in the browser: pick an
+   endpoint, fill in the fields and press **Execute**. For `/api/v1/ask`, press **Authorize**
+   first and paste your API key. A new answer takes a minute or two on a laptop; search is
+   instant. `http://localhost:5099/healthz/ready` shows whether the database is reachable, and the
+   OpenAPI document is at `/openapi/v1.json`.
+
+   The Swagger page is on in Development only (`ApiDocs:SwaggerUi`). To get it from the Docker
+   image, add `-e ApiDocs__SwaggerUi=true`.
 
 ### Endpoints
 
