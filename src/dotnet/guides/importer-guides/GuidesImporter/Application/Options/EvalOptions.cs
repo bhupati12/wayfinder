@@ -23,7 +23,17 @@ public class EvalOptions
     /// <summary>API key sent as X-Api-Key, when the service requires one.</summary>
     public string? ApiKey { get; set; }
 
-    public string[] Modes { get; set; } = ["hybrid", "vector", "keyword"];
+    /// <summary>
+    /// Search modes to evaluate; empty means all three. The default is empty on purpose: the
+    /// configuration binder appends configured array items to a non-empty default instead of
+    /// replacing it, which listed every mode twice.
+    /// </summary>
+    public string[] Modes { get; set; } = [];
+
+    public IReadOnlyList<string> EffectiveModes =>
+        Modes.Length == 0
+            ? ["hybrid", "vector", "keyword"]
+            : Modes.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
     /// <summary>Results requested per search; recall is reported at 5 and at this value.</summary>
     [Range(5, 50)]

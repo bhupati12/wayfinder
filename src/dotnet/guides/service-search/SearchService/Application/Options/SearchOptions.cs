@@ -33,6 +33,23 @@ public class SearchOptions
     [Range(1, 1000)]
     public int RrfK { get; set; } = 60;
 
+    /// <summary>
+    /// Weight of the keyword list in the fusion (the vector list's weight is 1). Below 1 trusts
+    /// the embedding ranking more; see docs/EVALUATION.md for the measured effect.
+    /// </summary>
+    [Range(0.0, 2.0)]
+    public double KeywordWeight { get; set; } = 1.0;
+
+    /// <summary>
+    /// Keyword search first ranks only the chunks that contain every query word, and uses them
+    /// when at least this many match; otherwise it ranks every chunk containing any word. Ranking
+    /// is the expensive part (each matching tsvector is read and scored), and a common word such
+    /// as "get" matches 40% of the corpus, so the all-words pass is far cheaper. 0 always ranks
+    /// any-word matches. See docs/LOADTEST.md for the measured effect.
+    /// </summary>
+    [Range(0, 1000)]
+    public int KeywordAllWordsMinResults { get; set; } = 10;
+
     /// <summary>Added to a keyword score when the article title also matches the query.</summary>
     [Range(0, 10)]
     public double TitleMatchBoost { get; set; } = 0.5;

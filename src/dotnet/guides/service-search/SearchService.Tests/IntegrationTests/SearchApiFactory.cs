@@ -95,6 +95,18 @@ public sealed class SearchApiFactory : WebApplicationFactory<Program>, IAsyncLif
         return await db.Chunks.Where(c => c.Text == text).Select(c => c.Id).SingleAsync();
     }
 
+    /// <summary>Whether <paramref name="text"/> matches <paramref name="query"/> under the keyword-search configuration.</summary>
+    public async Task<bool> KeywordMatchesAsync(string text, string query)
+    {
+        await using var db = CreateContext();
+        var config = GuidesDbEntities.Configurations.GuideChunkConfiguration.FullTextConfiguration;
+        return await db
+            .Database.SqlQuery<bool>(
+                $"SELECT to_tsvector({config}::regconfig, {text}) @@ plainto_tsquery({config}::regconfig, {query}) AS \"Value\""
+            )
+            .SingleAsync();
+    }
+
     public const string ApiKey = "test-api-key-0123456789";
 
     /// <summary>A client that sends the test API key.</summary>

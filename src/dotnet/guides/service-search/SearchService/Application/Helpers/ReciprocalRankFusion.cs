@@ -7,7 +7,8 @@ public sealed record FusedHit(long ChunkId, double Score, int? VectorRank, int? 
 /// Reciprocal rank fusion: score(d) = sum over lists of 1 / (k + rank of d in that list). It uses
 /// only ranks, so it can merge lists whose scores are on different scales (cosine similarity and
 /// ts_rank) without normalising them, and a chunk found by both methods beats one found by only
-/// one of them at a similar rank.
+/// one of them at a similar rank. <c>keywordWeight</c> scales the keyword list's contribution
+/// (weighted RRF); 1 is the unweighted method.
 /// </summary>
 public static class ReciprocalRankFusion
 {
@@ -15,7 +16,8 @@ public static class ReciprocalRankFusion
         IReadOnlyList<long> vectorIds,
         IReadOnlyList<long> keywordIds,
         int k,
-        int take
+        int take,
+        double keywordWeight = 1.0
     )
     {
         var hits = new Dictionary<long, (double Score, int? VectorRank, int? KeywordRank)>();
@@ -36,7 +38,7 @@ public static class ReciprocalRankFusion
             var current = hits.GetValueOrDefault(id);
             if (current.KeywordRank is null)
             {
-                hits[id] = (current.Score + 1.0 / (k + i + 1), current.VectorRank, i + 1);
+                hits[id] = (current.Score + keywordWeight / (k + i + 1), current.VectorRank, i + 1);
             }
         }
 

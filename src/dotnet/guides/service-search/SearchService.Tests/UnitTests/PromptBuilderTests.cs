@@ -23,7 +23,7 @@ public class PromptBuilderTests
 
     /// <summary>
     /// Snapshot of the whole prompt. A change to the wording must be deliberate: update
-    /// Snapshots/answer-prompt-v1.txt (run the tests with UPDATE_SNAPSHOTS=1) and bump the version.
+    /// Snapshots/answer-prompt-v2.txt (run the tests with UPDATE_SNAPSHOTS=1) and bump the version.
     /// </summary>
     [Fact]
     public void Prompt_matches_the_snapshot()
@@ -61,7 +61,21 @@ public class PromptBuilderTests
             "<source id=\"1\" title=\"Akita\" section=\"Eat\">\nAkita is famous for kiritanpo and ramen.\n</source>",
             messages[1].Content
         );
-        Assert.EndsWith("Question: Where can I eat ramen?", messages[1].Content);
+        // v2: the fixed reminder follows the question, after the last source.
+        var question = messages[1].Content.LastIndexOf("Question: Where can I eat ramen?", StringComparison.Ordinal);
+        Assert.True(question > messages[1].Content.LastIndexOf("</source>", StringComparison.Ordinal));
+        Assert.EndsWith("for example: The museum opens at 9:00 [2].", messages[1].Content);
+    }
+
+    [Fact]
+    public void Template_hash_is_stable_and_part_of_the_answer_cache_key()
+    {
+        Assert.Equal(builder.TemplateHash, new PromptBuilder().TemplateHash);
+        Assert.Matches("^[0-9a-f]{16}$", builder.TemplateHash);
+        Assert.NotEqual(
+            ResponseCache.AnswerKey("q", 6, $"{builder.Version}:{builder.TemplateHash}", "chat", "embed"),
+            ResponseCache.AnswerKey("q", 6, $"{builder.Version}:0000000000000000", "chat", "embed")
+        );
     }
 
     [Fact]

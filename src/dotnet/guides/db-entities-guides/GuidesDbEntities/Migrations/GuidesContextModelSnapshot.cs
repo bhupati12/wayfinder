@@ -141,7 +141,7 @@ namespace GuidesDbEntities.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("tsvector")
                         .HasColumnName("title_vector")
-                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "wayfinder_english")
                         .HasAnnotation("Npgsql:TsVectorProperties", new[] { "Title" });
 
                     b.Property<string>("Url")
@@ -215,7 +215,7 @@ namespace GuidesDbEntities.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("tsvector")
                         .HasColumnName("search_vector")
-                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "wayfinder_english")
                         .HasAnnotation("Npgsql:TsVectorProperties", new[] { "SectionHeading", "Text" });
 
                     b.Property<string>("SectionHeading")

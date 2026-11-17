@@ -12,8 +12,12 @@ public class GuideChunkConfiguration : IEntityTypeConfiguration<GuideChunk>
     /// </summary>
     public const int EmbeddingDimensions = 768;
 
-    /// <summary>PostgreSQL text search configuration used for keyword search.</summary>
-    public const string FullTextConfiguration = "english";
+    /// <summary>
+    /// PostgreSQL text search configuration used for keyword search: a copy of "english" that
+    /// strips diacritics (unaccent) before stemming, so "bun cha" matches "bún chả" and "Tokaido"
+    /// matches "Tōkaidō". Created by the AddUnaccentSearch migration.
+    /// </summary>
+    public const string FullTextConfiguration = "wayfinder_english";
 
     public void Configure(EntityTypeBuilder<GuideChunk> builder)
     {

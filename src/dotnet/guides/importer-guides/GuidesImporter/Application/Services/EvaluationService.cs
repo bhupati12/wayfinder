@@ -56,13 +56,23 @@ public sealed class EvaluationService
         var set = await LoadQuestionsAsync(cancellationToken);
         logger.LogInformation("Evaluating {Count} questions, run {Label}", set.Questions.Count, options.RunLabel);
 
-        var results = new List<EvalQuestionResult>();
-        foreach (var question in set.Questions)
+        // Retrieval for every question first, then every answer. A small machine may hold only one
+        // model at a time: interleaving them made the server swap the embedding and chat models for
+        // every question (90 reloads in one run), and searches timed out waiting for the reload.
+        // The answer pass reuses the query embeddings cached by the retrieval pass.
+        var results = set.Questions.Select(q => new EvalQuestionResult { Question = q }).ToList();
+        for (var i = 0; i < results.Count; i++)
         {
-            results.Add(await EvaluateAsync(question, cancellationToken));
-            if (results.Count % 10 == 0)
+            await SearchAsync(results[i], cancellationToken);
+            LogProgress("Retrieval", i + 1, results.Count);
+        }
+
+        if (options.EvaluateAnswers)
+        {
+            for (var i = 0; i < results.Count; i++)
             {
-                logger.LogInformation("Evaluated {Done}/{Total} questions", results.Count, set.Questions.Count);
+                await AnswerAsync(results[i], cancellationToken);
+                LogProgress("Answers", i + 1, results.Count);
             }
         }
 
@@ -84,9 +94,14 @@ public sealed class EvaluationService
             $"chunks {ingestion.MinChunkTokens}-{ingestion.MaxChunkTokens} tokens, overlap {ingestion.OverlapTokens}",
             options.MaxK,
             options.EvaluateAnswers ? judge.Model : null,
-            resultsFile
+            // Shown relative to the report, so it is also a working link from docs/.
+            Path.GetRelativePath(Path.GetDirectoryName(Resolve(options.ReportPath))!, Resolve(resultsFile))
+                .Replace('\\', '/')
         );
-        await AppendReportAsync(EvaluationReport.Build(info, results, options.Modes, options.MaxK), cancellationToken);
+        await AppendReportAsync(
+            EvaluationReport.Build(info, results, options.EffectiveModes, options.MaxK),
+            cancellationToken
+        );
 
         logger.LogInformation(
             "Evaluation {Label} finished in {Elapsed}; report: {Report}",
@@ -97,12 +112,20 @@ public sealed class EvaluationService
         return results;
     }
 
-    private async Task<EvalQuestionResult> EvaluateAsync(EvalQuestion question, CancellationToken cancellationToken)
+    private void LogProgress(string pass, int done, int total)
     {
-        var result = new EvalQuestionResult { Question = question };
+        if (done % 10 == 0 || done == total)
+        {
+            logger.LogInformation("{Pass}: {Done}/{Total} questions", pass, done, total);
+        }
+    }
+
+    private async Task SearchAsync(EvalQuestionResult result, CancellationToken cancellationToken)
+    {
+        var question = result.Question;
         try
         {
-            foreach (var mode in options.Modes)
+            foreach (var mode in options.EffectiveModes)
             {
                 var timer = Stopwatch.StartNew();
                 var hits = await api.SearchAsync(question.Question, mode, options.MaxK, cancellationToken);
@@ -113,30 +136,42 @@ public sealed class EvaluationService
                     result.SectionRank[mode] = RetrievalMetrics.FirstSectionRank(hits, article, question.Section);
                 }
             }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            RecordError(result, "search", ex);
+        }
+    }
 
-            if (options.EvaluateAnswers)
+    private async Task AnswerAsync(EvalQuestionResult result, CancellationToken cancellationToken)
+    {
+        var question = result.Question;
+        try
+        {
+            result.Answer = await api.AskAsync(question.Question, cancellationToken);
+            if (result.Answer.Answered)
             {
-                result.Answer = await api.AskAsync(question.Question, cancellationToken);
-                if (result.Answer.Answered)
-                {
-                    var texts = await chunks.GetTextsAsync(result.Answer.CitedChunkIds, cancellationToken);
-                    var sources = result.Answer.CitedChunkIds.Where(texts.ContainsKey).Select(id => texts[id]).ToList();
-                    (result.Verdict, result.VerdictReason) = await judge.JudgeAsync(
-                        question.Question,
-                        result.Answer.Answer,
-                        sources,
-                        cancellationToken
-                    );
-                }
+                var texts = await chunks.GetTextsAsync(result.Answer.CitedChunkIds, cancellationToken);
+                var sources = result.Answer.CitedChunkIds.Where(texts.ContainsKey).Select(id => texts[id]).ToList();
+                (result.Verdict, result.VerdictReason) = await judge.JudgeAsync(
+                    question.Question,
+                    result.Answer.Answer,
+                    sources,
+                    cancellationToken
+                );
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            logger.LogWarning(ex, "Question {Id} failed", question.Id);
-            result.Error = ex.Message;
+            RecordError(result, "answer", ex);
         }
+    }
 
-        return result;
+    private void RecordError(EvalQuestionResult result, string pass, Exception ex)
+    {
+        logger.LogWarning(ex, "Question {Id} failed in the {Pass} pass", result.Question.Id, pass);
+        var message = $"{pass}: {ex.Message}";
+        result.Error = result.Error is null ? message : $"{result.Error}; {message}";
     }
 
     private async Task<EvalQuestionSet> LoadQuestionsAsync(CancellationToken cancellationToken)
@@ -216,5 +251,11 @@ public sealed class EvaluationService
     private string Resolve(string path) => Path.GetFullPath(path, environment.ContentRootPath);
 
     private static string Slug(string label) =>
-        new(label.ToLowerInvariant().Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray());
+        string.Join(
+            '-',
+            new string(label.ToLowerInvariant().Select(ch => char.IsLetterOrDigit(ch) ? ch : ' ').ToArray()).Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries
+            )
+        );
 }

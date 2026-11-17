@@ -38,6 +38,7 @@ public static class EvaluationReport
           cited sources. LLM judges make mistakes; the agreement with a hand check is reported
           separately once `eval/judgements-to-verify.json` has been filled in.
 
+
         """;
 
     public static string Build(
@@ -160,7 +161,10 @@ public static class EvaluationReport
         var errors = results.Count(r => r.Error is not null);
         if (errors > 0)
         {
-            md.Append(c, $"{errors} questions hit an error; see the raw results.\n\n");
+            md.Append(
+                c,
+                $"**{errors} questions hit an error and count as misses above; see the raw results.** Rerun before quoting these numbers.\n\n"
+            );
         }
 
         return md.ToString();

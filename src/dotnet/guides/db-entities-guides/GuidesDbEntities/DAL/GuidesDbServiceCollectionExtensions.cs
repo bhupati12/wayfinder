@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,7 +48,7 @@ public static class GuidesDbServiceCollectionExtensions
         int? commandTimeoutSeconds = null
     ) =>
         options
-            .UseNpgsql(connectionString, npgsql =>
+            .UseNpgsql(WithoutGssUnlessSet(connectionString), npgsql =>
             {
                 npgsql.UseVector();
                 if (commandTimeoutSeconds is { } timeout)
@@ -56,6 +57,30 @@ public static class GuidesDbServiceCollectionExtensions
                 }
             })
             .UseSnakeCaseNamingConvention();
+
+    /// <summary>
+    /// Turns GSS encryption off unless the connection string sets it. Npgsql's default (Prefer)
+    /// loads the Kerberos library to try GSS encryption on every new connection; the slim .NET
+    /// runtime image has no such library, so each attempt logged "Cannot load library
+    /// libgssapi_krb5.so.2". This database uses passwords and TLS, not Kerberos.
+    /// </summary>
+    public static string WithoutGssUnlessSet(string connectionString)
+    {
+        // NpgsqlConnectionStringBuilder.ContainsKey is true for every keyword it knows, so the
+        // keys actually written in the string are read with the generic builder.
+        var setsGss = new DbConnectionStringBuilder { ConnectionString = connectionString }
+            .Keys.Cast<string>()
+            .Any(k =>
+                k.Replace(" ", "", StringComparison.Ordinal)
+                    .Equals("GssEncryptionMode", StringComparison.OrdinalIgnoreCase)
+            );
+        return setsGss
+            ? connectionString
+            : new NpgsqlConnectionStringBuilder(connectionString)
+            {
+                GssEncryptionMode = GssEncryptionMode.Disable,
+            }.ConnectionString;
+    }
 }
 
 /// <summary>

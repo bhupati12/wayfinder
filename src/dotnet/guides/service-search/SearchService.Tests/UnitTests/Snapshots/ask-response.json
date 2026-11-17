@@ -12,7 +12,7 @@
     }
   ],
   "metadata": {
-    "promptVersion": "answer-prompt-v1",
+    "promptVersion": "answer-prompt-v2",
     "model": "qwen2.5:3b",
     "sourcesRetrieved": 6,
     "sourcesUsed": 5,

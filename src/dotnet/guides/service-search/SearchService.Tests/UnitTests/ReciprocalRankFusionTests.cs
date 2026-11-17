@@ -48,4 +48,16 @@ public class ReciprocalRankFusionTests
         Assert.Equal(1, fused.VectorRank);
         Assert.Equal(1.0 / 61, fused.Score, 10);
     }
+
+    [Fact]
+    public void Keyword_weight_scales_only_the_keyword_contribution()
+    {
+        // Keyword-only 2 is first; vector-only 3 is second. Unweighted, 2 wins; at weight 0.5 the
+        // keyword first place (0.5/61) falls below the vector second place (1/62).
+        Assert.Equal(2, ReciprocalRankFusion.Fuse([1, 3], [2], k: 60, take: 3)[1].ChunkId);
+        var weighted = ReciprocalRankFusion.Fuse([1, 3], [2], k: 60, take: 3, keywordWeight: 0.5);
+
+        Assert.Equal([1L, 3L, 2L], weighted.Select(h => h.ChunkId));
+        Assert.Equal(0.5 / 61, weighted[2].Score, 10);
+    }
 }

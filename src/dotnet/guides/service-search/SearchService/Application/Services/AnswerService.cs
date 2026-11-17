@@ -147,7 +147,13 @@ public sealed class AnswerService : IAnswerService
     }
 
     private string CacheKey(string question, int? k) =>
-        ResponseCache.AnswerKey(question, k ?? options.DefaultK, prompts.Version, chat.Model, embeddings.Model);
+        ResponseCache.AnswerKey(
+            question,
+            k ?? options.DefaultK,
+            $"{prompts.Version}:{prompts.TemplateHash}",
+            chat.Model,
+            embeddings.Model
+        );
 
     private static AskResponse FromCache(AskResponse cached, Stopwatch total) =>
         cached with

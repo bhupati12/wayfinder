@@ -55,7 +55,7 @@ public class ResponseShapeTests
                 Citations = [new Citation(1, 1, "Akita", "Eat", "https://en.wikivoyage.org/wiki/Akita")],
                 Metadata = new AnswerMetadata
                 {
-                    PromptVersion = "answer-prompt-v1",
+                    PromptVersion = "answer-prompt-v2",
                     Model = "qwen2.5:3b",
                     SourcesRetrieved = 6,
                     SourcesUsed = 5,

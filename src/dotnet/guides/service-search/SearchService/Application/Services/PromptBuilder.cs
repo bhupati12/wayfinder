@@ -7,7 +7,13 @@ using SearchService.Application.Services.Interfaces;
 namespace SearchService.Application.Services;
 
 /// <summary>
-/// Grounded-answer prompt, version 1.
+/// Grounded-answer prompt, version 2.
+/// <para>
+/// v1 kept every rule in the system message only. On the local 3B model, answers after about
+/// 3,000 tokens of sources were correct but carried no [n] citations: the rule was too far back.
+/// v2 repeats the citation rule, with an example, after the question, where small models follow
+/// it. The reminder is fixed text written by us, never source text.
+/// </para>
 /// <para>
 /// Prompt injection: retrieved text is data, not instructions. All rules are in the system
 /// message, and the sources only ever appear in the user message, each wrapped in a
@@ -31,7 +37,18 @@ public sealed partial class PromptBuilder : IPromptBuilder
         5. Keep the answer under 120 words.
         """;
 
-    public string Version => "answer-prompt-v1";
+    // A draft that also repeated the "I don't know" rule here made the model refuse answerable
+    // questions (2 of 5 in the spot check), so the reminder carries only the citation rule.
+    private const string Reminder = """
+        Answer the question using only the sources above. After each sentence, put the number of the source it came from in square brackets, for example: The museum opens at 9:00 [2].
+        """;
+
+    public string Version => "answer-prompt-v2";
+
+    public string TemplateHash { get; } =
+        Convert.ToHexStringLower(
+            System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(SystemPrompt + "\n" + Reminder))
+        )[..16];
 
     public string NoAnswerText => NoAnswer;
 
@@ -44,7 +61,7 @@ public sealed partial class PromptBuilder : IPromptBuilder
             user.Append(FormatSource(source)).Append("\n\n");
         }
 
-        user.Append("Question: ").Append(Neutralise(question.Trim()));
+        user.Append("Question: ").Append(Neutralise(question.Trim())).Append("\n\n").Append(Reminder);
 
         return [new ChatMessage(ChatRole.System, SystemPrompt), new ChatMessage(ChatRole.User, user.ToString())];
     }

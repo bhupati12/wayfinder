@@ -38,7 +38,7 @@ public sealed class AskApiTests : IClassFixture<SearchApiFactory>
         var citation = Assert.Single(body.Citations);
         Assert.Equal(1, citation.Number);
         Assert.StartsWith("https://en.wikivoyage.org/wiki/", citation.SourceUrl);
-        Assert.Equal("answer-prompt-v1", body.Metadata.PromptVersion);
+        Assert.Equal("answer-prompt-v2", body.Metadata.PromptVersion);
         Assert.True(body.Metadata.SourcesUsed > 0);
         Assert.Equal(100, body.Metadata.InputTokens);
         Assert.True(body.Metadata.TotalMilliseconds >= body.Metadata.RetrievalMilliseconds);

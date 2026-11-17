@@ -22,3 +22,5 @@ The Akita Shinkansen runs from Tokyo.
 </source>
 
 Question: Where can I eat ramen in Akita?
+
+Answer the question using only the sources above. After each sentence, put the number of the source it came from in square brackets, for example: The museum opens at 9:00 [2].

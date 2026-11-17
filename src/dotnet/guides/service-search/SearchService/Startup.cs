@@ -14,6 +14,7 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using SearchService.Application.Filters;
 using SearchService.Application.Options;
 using SearchService.Application.Security;
 using SearchService.Application.Services;
@@ -36,7 +37,7 @@ public static class Startup
         var configuration = builder.Configuration;
 
         services
-            .AddControllers()
+            .AddControllers(o => o.Filters.Add<DisableRequestTimeoutOnResultFilter>())
             .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         services.AddOpenApi("v1");
         services.AddSingleton(TimeProvider.System);
@@ -50,6 +51,7 @@ public static class Startup
             }
         );
         services.AddExceptionHandler<LlmUnavailableExceptionHandler>();
+        services.AddExceptionHandler<DatabaseUnavailableExceptionHandler>();
         services.AddExceptionHandler<FallbackExceptionHandler>();
 
         // Database: ConnectionStrings:Guides from user secrets (Development) or the environment;

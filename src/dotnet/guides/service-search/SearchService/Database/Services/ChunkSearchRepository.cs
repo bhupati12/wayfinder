@@ -52,25 +52,50 @@ public sealed class ChunkSearchRepository : IChunkSearchRepository
 
     public async Task<IReadOnlyList<ChunkHit>> KeywordAsync(string query, int k, CancellationToken cancellationToken)
     {
+        var minAllWords = options.KeywordAllWordsMinResults;
+        if (minAllWords > 0)
+        {
+            var allWords = await RankKeywordAsync(query, k, allWords: true, cancellationToken);
+            if (allWords.Count >= Math.Min(minAllWords, k))
+            {
+                return allWords;
+            }
+        }
+
+        return await RankKeywordAsync(query, k, allWords: false, cancellationToken);
+    }
+
+    private async Task<List<ChunkHit>> RankKeywordAsync(
+        string query,
+        int k,
+        bool allWords,
+        CancellationToken cancellationToken
+    )
+    {
         var config = GuideChunkConfiguration.FullTextConfiguration;
         var boost = options.TitleMatchBoost;
+        var requireAll = allWords;
 
         // plainto_tsquery stems the words and drops stop words, giving 'eat' & 'ramen' & 'akita'.
         // Swapping & for | makes any word match; ts_rank_cd then rewards chunks with more of them
-        // close together. Normalisation 32 maps the rank into [0, 1). Column aliases are
-        // snake_case because the naming convention also applies to SqlQuery result types.
+        // close together. Normalisation 32 maps the rank into [0, 1). Both passes score with the
+        // any-word query, so a chunk gets the same score whichever pass finds it; the all-words
+        // pass only narrows which chunks are scored. Column aliases are snake_case because the
+        // naming convention also applies to SqlQuery result types.
         return await db
             .Database.SqlQuery<ChunkHit>(
                 $"""
                 SELECT c.id AS chunk_id,
-                       (ts_rank_cd(c.search_vector, q.query, 32)
-                        + CASE WHEN a.title_vector @@ q.query THEN {boost} ELSE 0 END)::float8 AS score
+                       (ts_rank_cd(c.search_vector, q.any_words, 32)
+                        + CASE WHEN a.title_vector @@ q.any_words THEN {boost} ELSE 0 END)::float8 AS score
                 FROM guide_chunks c
                 JOIN guide_articles a ON a.id = c.article_id
                 CROSS JOIN LATERAL (
-                    SELECT NULLIF(replace(plainto_tsquery({config}::regconfig, {query})::text, '&', '|'), '')::tsquery AS query
+                    SELECT p.all_words,
+                           NULLIF(replace(p.all_words::text, '&', '|'), '')::tsquery AS any_words
+                    FROM (SELECT plainto_tsquery({config}::regconfig, {query}) AS all_words) p
                 ) q
-                WHERE c.search_vector @@ q.query
+                WHERE c.search_vector @@ (CASE WHEN {requireAll} THEN q.all_words ELSE q.any_words END)
                 ORDER BY score DESC, c.id
                 LIMIT {k}
                 """
@@ -97,7 +122,8 @@ public sealed class ChunkSearchRepository : IChunkSearchRepository
             vector.Select(h => h.ChunkId).ToList(),
             keyword.Select(h => h.ChunkId).ToList(),
             options.RrfK,
-            k
+            k,
+            options.KeywordWeight
         );
     }
 

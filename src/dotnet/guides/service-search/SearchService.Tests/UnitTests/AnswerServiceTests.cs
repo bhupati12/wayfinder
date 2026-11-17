@@ -33,7 +33,7 @@ public class AnswerServiceTests
             (100, 2, 2),
             (response.Metadata.InputTokens, response.Metadata.SourcesRetrieved, response.Metadata.SourcesUsed)
         );
-        Assert.Equal("answer-prompt-v1", response.Metadata.PromptVersion);
+        Assert.Equal("answer-prompt-v2", response.Metadata.PromptVersion);
         Assert.Equal("fake-chat", response.Metadata.Model);
         Assert.Contains("Wikivoyage", response.Attribution);
     }

@@ -57,6 +57,27 @@ public sealed class HardeningTests : IClassFixture<SearchApiFactory>
     }
 
     [Fact]
+    public async Task An_unreachable_database_is_a_503_with_retry_after()
+    {
+        // Port 1 on the loopback refuses connections, like a stopped PostgreSQL.
+        using var host = factory.WithWebHostBuilder(b =>
+            b.UseSetting(
+                "ConnectionStrings:Guides",
+                "Host=127.0.0.1;Port=1;Database=wayfinder;Username=wayfinder;Password=unused"
+            )
+        );
+
+        var response = await host.CreateClient().GetAsync("/api/v1/search?q=ramen&mode=keyword");
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.True(response.Headers.Contains("Retry-After"));
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("database is unavailable", body);
+        Assert.DoesNotContain("127.0.0.1", body);
+    }
+
+    [Fact]
     public async Task Ask_is_rate_limited_per_key()
     {
         using var host = factory.WithWebHostBuilder(b => b.UseSetting("RateLimiting:AskPermitsPerMinute", "2"));

@@ -53,6 +53,36 @@ public sealed class SearchApiTests : IClassFixture<SearchApiFactory>
     }
 
     [Fact]
+    public async Task Keyword_search_uses_all_word_matches_when_there_are_enough()
+    {
+        // Only the Bangkok chunk has both "noodle" and "night"; with k=1 that is enough.
+        var response = await SearchAsync("q=noodle%20night&mode=keyword&k=1");
+
+        Assert.Equal([await factory.ChunkIdAsync(4)], response.Results.Select(r => r.ChunkId));
+    }
+
+    [Fact]
+    public async Task Keyword_search_falls_back_to_any_word_when_too_few_chunks_have_every_word()
+    {
+        // k=2 needs two all-word matches and there is one, so chunks with either word count.
+        var response = await SearchAsync("q=noodle%20night&mode=keyword&k=2");
+
+        Assert.Equal(
+            [await factory.ChunkIdAsync(4), await factory.ChunkIdAsync(0)],
+            response.Results.Select(r => r.ChunkId)
+        );
+    }
+
+    [Theory]
+    [InlineData("Try bún chả at a street stall.", "bun cha")]
+    [InlineData("The Tōkaidō Shinkansen stops at Kyoto.", "Tokaido shinkansen")]
+    [InlineData("Order a bowl of pho for breakfast.", "phở")]
+    public async Task Keyword_search_ignores_diacritics(string text, string query)
+    {
+        Assert.True(await factory.KeywordMatchesAsync(text, query));
+    }
+
+    [Fact]
     public async Task Vector_search_finds_meaning_that_shares_no_words_with_the_query()
     {
         // No chunk contains "cuisine", so keyword search finds nothing; vector search finds food.

@@ -5,6 +5,7 @@ using GuidesImporter.Application.Options;
 using GuidesImporter.Application.Services;
 using GuidesImporter.Application.Services.Interfaces;
 using GuidesImporter.Database.Services.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -154,6 +155,30 @@ public class EvaluationServiceTests : IDisposable
         Assert.Contains("Osaka — Eat", toVerify.Single(j => j.Id == "q1").Sources[0]);
     }
 
+    [Fact]
+    public async Task Every_search_runs_before_the_first_answer()
+    {
+        // Small machines hold one model at a time; interleaving searches (embedding model) with
+        // answers (chat model) forced a model reload for every question.
+        var api = new FakeApi();
+        var service = new EvaluationService(
+            api,
+            new FakeJudge(),
+            new FakeChunks(),
+            MsOptions.Create(new EvalOptions()),
+            MsOptions.Create(new IngestionOptions()),
+            new FakeEnvironment(root),
+            TimeProvider.System,
+            NullLogger<EvaluationService>.Instance
+        );
+
+        await service.RunAsync(CancellationToken.None);
+
+        Assert.Equal(9, api.Calls.Count(c => c == "search")); // 3 questions x 3 modes
+        Assert.Equal(3, api.Calls.Count(c => c == "ask"));
+        Assert.Equal(api.Calls.LastIndexOf("search") + 1, api.Calls.IndexOf("ask"));
+    }
+
     public void Dispose()
     {
         try
@@ -168,6 +193,8 @@ public class EvaluationServiceTests : IDisposable
 
     private sealed class FakeApi : IEvalApiClient
     {
+        public List<string> Calls { get; } = [];
+
         public Task<IReadOnlyList<EvalHit>> SearchAsync(
             string query,
             string mode,
@@ -175,6 +202,7 @@ public class EvaluationServiceTests : IDisposable
             CancellationToken cancellationToken
         )
         {
+            Calls.Add("search");
             IReadOnlyList<EvalHit> hits = (query, mode) switch
             {
                 ("Where to eat ramen?", "keyword") => [new(9, "Tokyo", "Eat")],
@@ -185,12 +213,15 @@ public class EvaluationServiceTests : IDisposable
             return Task.FromResult(hits);
         }
 
-        public Task<EvalAnswer> AskAsync(string question, CancellationToken cancellationToken) =>
-            Task.FromResult(
+        public Task<EvalAnswer> AskAsync(string question, CancellationToken cancellationToken)
+        {
+            Calls.Add("ask");
+            return Task.FromResult(
                 question.StartsWith("Capital", StringComparison.Ordinal)
                     ? new EvalAnswer("I don't know based on the available guides.", false, [], 50, 10, 100)
                     : new EvalAnswer("Try Dotonbori [1].", true, [1], 400, 20, 2000)
             );
+        }
     }
 
     private sealed class FakeJudge : IAnswerJudge
@@ -229,5 +260,35 @@ public class EvaluationServiceTests : IDisposable
         public string ContentRootPath { get; set; } = root;
 
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
+}
+
+public class EvalOptionsTests
+{
+    [Fact]
+    public void Configured_modes_replace_the_default_instead_of_adding_to_it()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["Eval:Modes:0"] = "hybrid",
+                    ["Eval:Modes:1"] = "vector",
+                    ["Eval:Modes:2"] = "keyword",
+                }
+            )
+            .Build();
+        var options = new EvalOptions();
+
+        configuration.GetSection("Eval").Bind(options);
+
+        Assert.Equal(["hybrid", "vector", "keyword"], options.EffectiveModes);
+    }
+
+    [Fact]
+    public void No_configured_modes_means_all_three()
+    {
+        Assert.Equal(["hybrid", "vector", "keyword"], new EvalOptions().EffectiveModes);
+        Assert.Equal(["keyword"], new EvalOptions { Modes = ["keyword", "KEYWORD"] }.EffectiveModes);
     }
 }
