@@ -70,7 +70,10 @@ public class ChatOptions : IValidatableObject
 
         if (MaxOutputTokens >= ContextWindowTokens)
         {
-            yield return new ValidationResult("MaxOutputTokens must be smaller than ContextWindowTokens.", [nameof(MaxOutputTokens)]);
+            yield return new ValidationResult(
+                "MaxOutputTokens must be smaller than ContextWindowTokens.",
+                [nameof(MaxOutputTokens)]
+            );
         }
 
         if (!BaseUrl.EndsWith('/'))

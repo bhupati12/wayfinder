@@ -15,7 +15,12 @@ public sealed class EmbeddingRunRepository : IEmbeddingRunRepository
         this.db = db;
     }
 
-    public async Task<long> StartAsync(string model, int chunksPending, DateTimeOffset startedAt, CancellationToken cancellationToken)
+    public async Task<long> StartAsync(
+        string model,
+        int chunksPending,
+        DateTimeOffset startedAt,
+        CancellationToken cancellationToken
+    )
     {
         var run = new EmbeddingRun
         {

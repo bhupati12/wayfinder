@@ -6,11 +6,7 @@ namespace Llm.Core.Models;
 /// <param name="TokensReportedByProvider">
 /// False when the provider did not report usage and <paramref name="InputTokens"/> is an estimate.
 /// </param>
-public sealed record EmbeddingResult(
-    IReadOnlyList<float[]> Vectors,
-    int InputTokens,
-    bool TokensReportedByProvider
-);
+public sealed record EmbeddingResult(IReadOnlyList<float[]> Vectors, int InputTokens, bool TokensReportedByProvider);
 
 public enum EmbeddingInputType
 {

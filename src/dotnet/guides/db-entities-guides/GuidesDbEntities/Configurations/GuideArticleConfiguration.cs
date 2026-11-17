@@ -20,7 +20,11 @@ public class GuideArticleConfiguration : IEntityTypeConfiguration<GuideArticle>
         builder.Property(a => a.ProcessingSignature).HasMaxLength(64).IsFixedLength().IsRequired();
 
         builder
-            .HasGeneratedTsVectorColumn(a => a.TitleVector!, GuideChunkConfiguration.FullTextConfiguration, a => new { a.Title })
+            .HasGeneratedTsVectorColumn(
+                a => a.TitleVector!,
+                GuideChunkConfiguration.FullTextConfiguration,
+                a => new { a.Title }
+            )
             .HasIndex(a => a.TitleVector)
             .HasMethod("GIN");
 

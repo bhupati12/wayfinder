@@ -15,24 +15,35 @@ public sealed class ChunkSearchService : ISearchService
 {
     private readonly IChunkSearchRepository repository;
     private readonly IEmbeddingClient embeddings;
+    private readonly IResponseCache cache;
     private readonly SearchOptions options;
     private readonly ILogger<ChunkSearchService> logger;
 
     public ChunkSearchService(
         IChunkSearchRepository repository,
         IEmbeddingClient embeddings,
+        IResponseCache cache,
         IOptions<SearchOptions> options,
         ILogger<ChunkSearchService> logger
     )
     {
         this.repository = repository;
         this.embeddings = embeddings;
+        this.cache = cache;
         this.options = options.Value;
         this.logger = logger;
     }
 
-    public async Task<SearchResponse> SearchAsync(string query, SearchMode mode, int k, CancellationToken cancellationToken)
+    public async Task<SearchResponse> SearchAsync(
+        string query,
+        SearchMode mode,
+        int k,
+        CancellationToken cancellationToken
+    )
     {
+        using var activity = Telemetry.Source.StartActivity("search");
+        activity?.SetTag("search.mode", mode.ToString());
+        activity?.SetTag("search.k", k);
         var stopwatch = Stopwatch.StartNew();
         query = query.Trim();
 
@@ -44,7 +55,10 @@ public sealed class ChunkSearchService : ISearchService
             case SearchMode.Vector:
             {
                 var vector = await EmbedQueryAsync(query, cancellationToken);
-                hits = Ranked(await repository.VectorAsync(vector, embeddings.Model, k, cancellationToken), isVector: true);
+                hits = Ranked(
+                    await repository.VectorAsync(vector, embeddings.Model, k, cancellationToken),
+                    isVector: true
+                );
                 break;
             }
 
@@ -69,14 +83,26 @@ public sealed class ChunkSearchService : ISearchService
 
                 hits = vector is null
                     ? Ranked(await repository.KeywordAsync(query, k, cancellationToken), isVector: false)
-                    : await repository.HybridAsync(query, vector, embeddings.Model, k, options.HybridCandidatePool, cancellationToken);
+                    : await repository.HybridAsync(
+                        query,
+                        vector,
+                        embeddings.Model,
+                        k,
+                        options.HybridCandidatePool,
+                        cancellationToken
+                    );
                 break;
             }
         }
 
         var details = await repository.GetDetailsAsync(hits.Select(h => h.ChunkId).ToList(), cancellationToken);
-        var results = hits
-            .Where(h => details.ContainsKey(h.ChunkId))
+        Telemetry.RetrievalDuration.Record(
+            stopwatch.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("mode", mode.ToString())
+        );
+        activity?.SetTag("search.results", hits.Count);
+        activity?.SetTag("search.degraded", degradedReason is not null);
+        var results = hits.Where(h => details.ContainsKey(h.ChunkId))
             .Select(h =>
             {
                 var d = details[h.ChunkId];
@@ -108,10 +134,19 @@ public sealed class ChunkSearchService : ISearchService
 
     private async Task<float[]> EmbedQueryAsync(string query, CancellationToken cancellationToken)
     {
+        // Popular questions repeat; their embedding never changes for a given model.
+        var cached = await cache.GetQueryEmbeddingAsync(embeddings.Model, query, cancellationToken);
+        if (cached is not null)
+        {
+            return cached;
+        }
+
         var result = await embeddings.EmbedAsync([query], EmbeddingInputType.Query, cancellationToken);
+        await cache.SetQueryEmbeddingAsync(embeddings.Model, query, result.Vectors[0], cancellationToken);
         return result.Vectors[0];
     }
 
     private static IReadOnlyList<FusedHit> Ranked(IReadOnlyList<ChunkHit> hits, bool isVector) =>
-        hits.Select((h, i) => new FusedHit(h.ChunkId, h.Score, isVector ? i + 1 : null, isVector ? null : i + 1)).ToList();
+        hits.Select((h, i) => new FusedHit(h.ChunkId, h.Score, isVector ? i + 1 : null, isVector ? null : i + 1))
+            .ToList();
 }

@@ -1,10 +1,10 @@
-using Llm.Core.Interfaces;
 using System.Text;
 using System.Text.RegularExpressions;
 using GuidesImporter.Application.Helpers;
 using GuidesImporter.Application.Models;
 using GuidesImporter.Application.Options;
 using GuidesImporter.Application.Services.Interfaces;
+using Llm.Core.Interfaces;
 using Microsoft.Extensions.Options;
 
 namespace GuidesImporter.Application.Services;
@@ -133,7 +133,11 @@ public sealed partial class Chunker : IChunker
             }
 
             var hasText = false;
-            for (var j = i + 1; j < units.Count && !(units[j].IsHeading && units[j].HeadingLevel <= unit.HeadingLevel); j++)
+            for (
+                var j = i + 1;
+                j < units.Count && !(units[j].IsHeading && units[j].HeadingLevel <= unit.HeadingLevel);
+                j++
+            )
             {
                 if (!units[j].IsHeading)
                 {
@@ -250,8 +254,12 @@ public sealed partial class Chunker : IChunker
 
         // Fold a small tail into the previous chunk when it fits, instead of leaving a fragment.
         var tail = draft.Units.Skip(draft.OverlapCount).ToList();
-        if (chunks.Count > 0 && draft.HasOwnText && tail.Sum(u => u.Tokens) < minTokens / 3
-            && chunks[^1].Sum(u => u.Tokens) + tail.Sum(u => u.Tokens) <= maxTokens)
+        if (
+            chunks.Count > 0
+            && draft.HasOwnText
+            && tail.Sum(u => u.Tokens) < minTokens / 3
+            && chunks[^1].Sum(u => u.Tokens) + tail.Sum(u => u.Tokens) <= maxTokens
+        )
         {
             chunks[^1].AddRange(tail);
         }
@@ -287,8 +295,13 @@ public sealed partial class Chunker : IChunker
 
         lineStart = Math.Max(lineStart - 1, draft.OverlapCount);
         var cut = end;
-        if (!nextStartsLine && lineStart > draft.OverlapCount && lineStart < end && units[lineStart].StartsLine
-            && units.Take(lineStart).Sum(u => u.Tokens) >= minTokens)
+        if (
+            !nextStartsLine
+            && lineStart > draft.OverlapCount
+            && lineStart < end
+            && units[lineStart].StartsLine
+            && units.Take(lineStart).Sum(u => u.Tokens) >= minTokens
+        )
         {
             cut = lineStart;
         }

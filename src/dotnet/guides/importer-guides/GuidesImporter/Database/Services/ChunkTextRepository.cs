@@ -14,17 +14,28 @@ public sealed class ChunkTextRepository : IChunkTextRepository
         this.db = db;
     }
 
-    public async Task<IReadOnlyDictionary<long, string>> GetTextsAsync(IReadOnlyCollection<long> chunkIds, CancellationToken cancellationToken)
+    public async Task<IReadOnlyDictionary<long, string>> GetTextsAsync(
+        IReadOnlyCollection<long> chunkIds,
+        CancellationToken cancellationToken
+    )
     {
         var rows = await db
             .Chunks.AsNoTracking()
             .Where(c => chunkIds.Contains(c.Id))
-            .Select(c => new { c.Id, Title = c.Article!.Title, c.SectionHeading, c.Text })
+            .Select(c => new
+            {
+                c.Id,
+                Title = c.Article!.Title,
+                c.SectionHeading,
+                c.Text,
+            })
             .ToListAsync(cancellationToken);
         return rows.ToDictionary(r => r.Id, r => ChunkEmbeddingText.Build(r.Title, r.SectionHeading, r.Text));
     }
 
-    public async Task<(int Articles, int Chunks, string? EmbeddingModel)> DescribeAsync(CancellationToken cancellationToken)
+    public async Task<(int Articles, int Chunks, string? EmbeddingModel)> DescribeAsync(
+        CancellationToken cancellationToken
+    )
     {
         var articles = await db.Articles.CountAsync(cancellationToken);
         var chunks = await db.Chunks.CountAsync(cancellationToken);

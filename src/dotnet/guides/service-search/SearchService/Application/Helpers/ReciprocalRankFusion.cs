@@ -11,7 +11,12 @@ public sealed record FusedHit(long ChunkId, double Score, int? VectorRank, int? 
 /// </summary>
 public static class ReciprocalRankFusion
 {
-    public static IReadOnlyList<FusedHit> Fuse(IReadOnlyList<long> vectorIds, IReadOnlyList<long> keywordIds, int k, int take)
+    public static IReadOnlyList<FusedHit> Fuse(
+        IReadOnlyList<long> vectorIds,
+        IReadOnlyList<long> keywordIds,
+        int k,
+        int take
+    )
     {
         var hits = new Dictionary<long, (double Score, int? VectorRank, int? KeywordRank)>();
 
@@ -35,8 +40,7 @@ public static class ReciprocalRankFusion
             }
         }
 
-        return hits
-            .Select(h => new FusedHit(h.Key, h.Value.Score, h.Value.VectorRank, h.Value.KeywordRank))
+        return hits.Select(h => new FusedHit(h.Key, h.Value.Score, h.Value.VectorRank, h.Value.KeywordRank))
             .OrderByDescending(h => h.Score)
             .ThenBy(h => Math.Min(h.VectorRank ?? int.MaxValue, h.KeywordRank ?? int.MaxValue))
             .ThenBy(h => h.ChunkId)

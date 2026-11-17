@@ -1,5 +1,3 @@
-using Llm.Infrastructure.Services;
-using Llm.Core.Interfaces;
 using GuidesDbEntities.Configurations;
 using GuidesDbEntities.DAL;
 using GuidesImporter.Application.CronJobs;
@@ -8,8 +6,10 @@ using GuidesImporter.Application.Services;
 using GuidesImporter.Application.Services.Interfaces;
 using GuidesImporter.Database.Services;
 using GuidesImporter.Database.Services.Interfaces;
+using Llm.Core.Interfaces;
 using Llm.Infrastructure.Extensions;
 using Llm.Infrastructure.Options;
+using Llm.Infrastructure.Services;
 using Microsoft.Extensions.Options;
 
 namespace GuidesImporter;
@@ -26,8 +26,9 @@ public static class Startup
 
         // Database. The connection string comes from user secrets (Development) or the
         // ConnectionStrings__Guides environment variable, never from appsettings.json.
-        var connectionString =
-            builder.Configuration.GetConnectionString(GuidesDbServiceCollectionExtensions.ConnectionStringName)
+        var connectionString = builder.Configuration.GetConnectionString(
+            GuidesDbServiceCollectionExtensions.ConnectionStringName
+        )
             ?? throw new InvalidOperationException(
                 "Connection string 'Guides' is not set. For local development run: "
                     + "dotnet user-secrets set \"ConnectionStrings:Guides\" \"<connection string>\" "

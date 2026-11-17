@@ -116,9 +116,7 @@ public sealed class OpenAiCompatibleEmbeddingClient : IEmbeddingClient
     {
         if (payload?.Data is null || payload.Data.Count != inputs.Count)
         {
-            throw new LlmProviderException(
-                $"Expected {inputs.Count} embeddings, got {payload?.Data?.Count ?? 0}."
-            );
+            throw new LlmProviderException($"Expected {inputs.Count} embeddings, got {payload?.Data?.Count ?? 0}.");
         }
 
         var vectors = new float[inputs.Count][];
@@ -148,7 +146,12 @@ public sealed class OpenAiCompatibleEmbeddingClient : IEmbeddingClient
     private static int EstimateTokens(IReadOnlyList<string> inputs, string prefix) =>
         inputs.Sum(text => (prefix.Length + text.Length + 3) / 4);
 
-    private sealed record EmbeddingRequest(string Model, IReadOnlyList<string> Input, string EncodingFormat, int? Dimensions);
+    private sealed record EmbeddingRequest(
+        string Model,
+        IReadOnlyList<string> Input,
+        string EncodingFormat,
+        int? Dimensions
+    );
 
     private sealed record EmbeddingResponse(List<EmbeddingItem>? Data, string? Model, EmbeddingUsage? Usage);
 

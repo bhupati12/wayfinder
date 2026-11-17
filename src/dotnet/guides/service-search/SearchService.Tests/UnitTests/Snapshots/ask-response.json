@@ -1,0 +1,31 @@
+{
+  "question": "Where to eat ramen?",
+  "answer": "Akita is famous for ramen [1].",
+  "answered": true,
+  "citations": [
+    {
+      "number": 1,
+      "chunkId": 1,
+      "articleTitle": "Akita",
+      "section": "Eat",
+      "sourceUrl": "https://en.wikivoyage.org/wiki/Akita"
+    }
+  ],
+  "metadata": {
+    "promptVersion": "answer-prompt-v1",
+    "model": "qwen2.5:3b",
+    "sourcesRetrieved": 6,
+    "sourcesUsed": 5,
+    "cached": false,
+    "retrievalDegraded": false,
+    "inputTokens": 1800,
+    "outputTokens": 40,
+    "tokensEstimated": false,
+    "invalidCitations": 0,
+    "retrievalMilliseconds": 80,
+    "generationMilliseconds": 9000,
+    "totalMilliseconds": 9100,
+    "estimatedCostUsd": 0
+  },
+  "attribution": "Guide content from Wikivoyage (https://www.wikivoyage.org/), licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Each result links to its source article."
+}

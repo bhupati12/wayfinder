@@ -10,12 +10,7 @@ public static class BalancedScanner
     /// result of <paramref name="replace"/>, which receives the inner text. An opener with no
     /// matching closer is dropped and the text after it is kept.
     /// </summary>
-    public static string ReplaceOutermost(
-        string text,
-        string open,
-        string close,
-        Func<string, string> replace
-    )
+    public static string ReplaceOutermost(string text, string open, string close, Func<string, string> replace)
     {
         if (!text.Contains(open, StringComparison.Ordinal))
         {
@@ -61,12 +56,19 @@ public static class BalancedScanner
         var start = 0;
         for (var i = 0; i < text.Length; i++)
         {
-            if (i + 1 < text.Length && ((text[i] == '{' && text[i + 1] == '{') || (text[i] == '[' && text[i + 1] == '[')))
+            if (
+                i + 1 < text.Length
+                && ((text[i] == '{' && text[i + 1] == '{') || (text[i] == '[' && text[i + 1] == '['))
+            )
             {
                 depth++;
                 i++;
             }
-            else if (i + 1 < text.Length && depth > 0 && ((text[i] == '}' && text[i + 1] == '}') || (text[i] == ']' && text[i + 1] == ']')))
+            else if (
+                i + 1 < text.Length
+                && depth > 0
+                && ((text[i] == '}' && text[i + 1] == '}') || (text[i] == ']' && text[i + 1] == ']'))
+            )
             {
                 depth--;
                 i++;

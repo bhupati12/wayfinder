@@ -36,12 +36,16 @@ public sealed class EmbedChunksJobTests : IClassFixture<PostgresFixture>
         Assert.Equal(IngestionRunStatus.Succeeded, run.Status);
         Assert.Equal((total, total, 0), (run.ChunksPending, run.ChunksEmbedded, run.ChunksFailed));
         Assert.Equal(fake.Calls.Count, run.Requests);
-        var expectedTokens = fake.Calls.SelectMany(c => c).Sum(i => i.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length);
+        var expectedTokens = fake
+            .Calls.SelectMany(c => c)
+            .Sum(i => i.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length);
         Assert.Equal(expectedTokens, run.InputTokens);
         Assert.Equal(expectedTokens * 2m / 1_000_000m, run.EstimatedCostUsd);
 
         // The embedded text carries the article title and section in front of the chunk.
-        Assert.Contains(fake.Calls.SelectMany(c => c), i => i.StartsWith("Aioi — Introduction\n\nAioi (相生) is a small port city", StringComparison.Ordinal));
+        Assert.Contains(fake.Calls.SelectMany(c => c), i =>
+            i.StartsWith("Aioi — Introduction\n\nAioi (相生) is a small port city", StringComparison.Ordinal)
+        );
 
         await using (var db = JobHost.CreateContext(connection))
         {
@@ -56,7 +60,10 @@ public sealed class EmbedChunksJobTests : IClassFixture<PostgresFixture>
         var again = new FakeEmbeddingClient();
         Assert.Equal(0, await EmbedAsync(connection, again));
         Assert.Empty(again.Calls);
-        Assert.Equal((0, 0), ((await LatestRunAsync(connection)).ChunksPending, (await LatestRunAsync(connection)).ChunksEmbedded));
+        Assert.Equal(
+            (0, 0),
+            ((await LatestRunAsync(connection)).ChunksPending, (await LatestRunAsync(connection)).ChunksEmbedded)
+        );
     }
 
     [Fact]
@@ -70,7 +77,9 @@ public sealed class EmbedChunksJobTests : IClassFixture<PostgresFixture>
         await using (var db = JobHost.CreateContext(connection))
         {
             var id = await db.Chunks.OrderBy(c => c.Id).Select(c => c.Id).FirstAsync();
-            await db.Chunks.Where(c => c.Id == id).ExecuteUpdateAsync(s => s.SetProperty(c => c.ContentHash, new string('0', 64)));
+            await db
+                .Chunks.Where(c => c.Id == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.ContentHash, new string('0', 64)));
         }
 
         var sameModel = new FakeEmbeddingClient("model-a");
@@ -181,8 +190,17 @@ public sealed class EmbedChunksJobTests : IClassFixture<PostgresFixture>
         return connection;
     }
 
-    private static Task<int> EmbedAsync(string connection, FakeEmbeddingClient fake, params (string Key, string Value)[] overrides) =>
-        JobHost.RunAsync(connection, "embedChunks", services => services.Replace(ServiceDescriptor.Singleton<IEmbeddingClient>(fake)), overrides);
+    private static Task<int> EmbedAsync(
+        string connection,
+        FakeEmbeddingClient fake,
+        params (string Key, string Value)[] overrides
+    ) =>
+        JobHost.RunAsync(
+            connection,
+            "embedChunks",
+            services => services.Replace(ServiceDescriptor.Singleton<IEmbeddingClient>(fake)),
+            overrides
+        );
 
     private static async Task<int> CountChunksAsync(string connection)
     {
@@ -193,7 +211,9 @@ public sealed class EmbedChunksJobTests : IClassFixture<PostgresFixture>
     private static async Task<int> CountPendingAsync(string connection, string model)
     {
         await using var db = JobHost.CreateContext(connection);
-        return await db.Chunks.CountAsync(c => c.Embedding == null || c.EmbeddingModel != model || c.EmbeddedContentHash != c.ContentHash);
+        return await db.Chunks.CountAsync(c =>
+            c.Embedding == null || c.EmbeddingModel != model || c.EmbeddedContentHash != c.ContentHash
+        );
     }
 
     private static async Task<EmbeddingRun> LatestRunAsync(string connection)

@@ -8,7 +8,14 @@ public sealed record EvalQuestionSet(int Version, string? Notes, IReadOnlyList<E
 /// <summary>One evaluation question and where its answer is.</summary>
 /// <param name="Article">Title of the article that answers it; null for an unanswerable question.</param>
 /// <param name="Section">Top-level section heading that holds the answer, when known.</param>
-public sealed record EvalQuestion(string Id, string Question, string? Article, string? Section, string Difficulty, bool Answerable);
+public sealed record EvalQuestion(
+    string Id,
+    string Question,
+    string? Article,
+    string? Section,
+    string Difficulty,
+    bool Answerable
+);
 
 /// <summary>A search result as the evaluation sees it.</summary>
 public sealed record EvalHit(long ChunkId, string ArticleTitle, string Section);

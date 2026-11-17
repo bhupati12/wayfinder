@@ -16,9 +16,9 @@ public class EvalOptions
     [Required, Url]
     public string SearchServiceBaseUrl { get; set; } = "http://localhost:5099/";
 
-    public string SearchPath { get; set; } = "api/search";
+    public string SearchPath { get; set; } = "api/v1/search";
 
-    public string AskPath { get; set; } = "api/ask";
+    public string AskPath { get; set; } = "api/v1/ask";
 
     /// <summary>API key sent as X-Api-Key, when the service requires one.</summary>
     public string? ApiKey { get; set; }

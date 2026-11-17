@@ -57,7 +57,11 @@ public sealed partial class LlmAnswerJudge : IAnswerJudge
         user.Append("\nAnswer to grade:\n").Append(answer);
 
         var completion = await chat.CompleteAsync(
-            new ChatRequest([new ChatMessage(ChatRole.System, SystemPrompt), new ChatMessage(ChatRole.User, user.ToString())], 80, 0),
+            new ChatRequest(
+                [new ChatMessage(ChatRole.System, SystemPrompt), new ChatMessage(ChatRole.User, user.ToString())],
+                80,
+                0
+            ),
             cancellationToken
         );
         return Parse(completion.Text);
@@ -67,11 +71,10 @@ public sealed partial class LlmAnswerJudge : IAnswerJudge
     {
         var verdict = VerdictRegex().Match(reply);
         var reason = ReasonRegex().Match(reply);
-        var parsed = !verdict.Success
-            ? JudgeVerdict.Unclear
-            : verdict.Groups["v"].Value.Equals("SUPPORTED", StringComparison.OrdinalIgnoreCase)
-                ? JudgeVerdict.Supported
-                : JudgeVerdict.Unsupported;
+        var parsed =
+            !verdict.Success ? JudgeVerdict.Unclear
+            : verdict.Groups["v"].Value.Equals("SUPPORTED", StringComparison.OrdinalIgnoreCase) ? JudgeVerdict.Supported
+            : JudgeVerdict.Unsupported;
         return (parsed, reason.Success ? reason.Groups["r"].Value.Trim() : null);
     }
 

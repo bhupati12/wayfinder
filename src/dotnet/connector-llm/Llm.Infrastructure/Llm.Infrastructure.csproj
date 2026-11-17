@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <ItemGroup>
     <ProjectReference Include="..\Llm.Core\Llm.Core.csproj" />
   </ItemGroup>
@@ -22,5 +21,4 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.15" />
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.15" />
   </ItemGroup>
-
 </Project>

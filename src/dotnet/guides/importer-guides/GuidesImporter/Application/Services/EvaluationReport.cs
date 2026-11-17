@@ -40,7 +40,12 @@ public static class EvaluationReport
 
         """;
 
-    public static string Build(EvaluationRunInfo info, IReadOnlyList<EvalQuestionResult> results, IReadOnlyList<string> modes, int maxK)
+    public static string Build(
+        EvaluationRunInfo info,
+        IReadOnlyList<EvalQuestionResult> results,
+        IReadOnlyList<string> modes,
+        int maxK
+    )
     {
         var c = CultureInfo.InvariantCulture;
         var answerable = results.Where(r => r.Question.Answerable).ToList();
@@ -53,20 +58,40 @@ public static class EvaluationReport
             md.Append(info.Notes.Trim()).Append("\n\n");
         }
 
-        md.Append(c, $"Settings: {info.Articles:N0} articles, {info.Chunks:N0} chunks ({info.ChunkSettings}); embedding model `{info.EmbeddingModel ?? "none"}`; ")
-            .Append(c, $"{answerable.Count} answerable and {unanswerable.Count} unanswerable questions; top {maxK} results per search; run took {info.Duration:hh\\:mm\\:ss}. ")
+        md.Append(
+                c,
+                $"Settings: {info.Articles:N0} articles, {info.Chunks:N0} chunks ({info.ChunkSettings}); embedding model `{info.EmbeddingModel ?? "none"}`; "
+            )
+            .Append(
+                c,
+                $"{answerable.Count} answerable and {unanswerable.Count} unanswerable questions; top {maxK} results per search; run took {info.Duration:hh\\:mm\\:ss}. "
+            )
             .Append(c, $"Raw results: `{info.ResultsFile}`.\n\n");
 
-        md.Append(c, $"| Mode | Recall@5 article | Recall@{maxK} article | Recall@5 section | Recall@{maxK} section | MRR@{maxK} article | Median search ms |\n");
+        md.Append(
+            c,
+            $"| Mode | Recall@5 article | Recall@{maxK} article | Recall@5 section | Recall@{maxK} section | MRR@{maxK} article | Median search ms |\n"
+        );
         md.Append("|---|---|---|---|---|---|---|\n");
         foreach (var mode in modes)
         {
             var article = answerable.Select(r => r.ArticleRank.GetValueOrDefault(mode)).ToList();
             var section = answerable.Select(r => r.SectionRank.GetValueOrDefault(mode)).ToList();
-            var latency = results.Where(r => r.SearchMilliseconds.ContainsKey(mode)).Select(r => r.SearchMilliseconds[mode]);
-            md.Append(c, $"| {mode} | {Pct(RetrievalMetrics.RecallAt(article, 5))} | {Pct(RetrievalMetrics.RecallAt(article, maxK))} | ")
-                .Append(c, $"{Pct(RetrievalMetrics.RecallAt(section, 5))} | {Pct(RetrievalMetrics.RecallAt(section, maxK))} | ")
-                .Append(c, $"{RetrievalMetrics.MeanReciprocalRank(article):F3} | {RetrievalMetrics.Median(latency)} |\n");
+            var latency = results
+                .Where(r => r.SearchMilliseconds.ContainsKey(mode))
+                .Select(r => r.SearchMilliseconds[mode]);
+            md.Append(
+                    c,
+                    $"| {mode} | {Pct(RetrievalMetrics.RecallAt(article, 5))} | {Pct(RetrievalMetrics.RecallAt(article, maxK))} | "
+                )
+                .Append(
+                    c,
+                    $"{Pct(RetrievalMetrics.RecallAt(section, 5))} | {Pct(RetrievalMetrics.RecallAt(section, maxK))} | "
+                )
+                .Append(
+                    c,
+                    $"{RetrievalMetrics.MeanReciprocalRank(article):F3} | {RetrievalMetrics.Median(latency)} |\n"
+                );
         }
 
         md.Append('\n');
@@ -74,7 +99,14 @@ public static class EvaluationReport
         foreach (var group in answerable.GroupBy(r => r.Question.Difficulty).OrderBy(g => g.Key))
         {
             md.Append(c, $" {group.Key} ({group.Count()}):");
-            md.Append(string.Join(",", modes.Select(m => $" {m} {Pct(RetrievalMetrics.RecallAt(group.Select(r => r.ArticleRank.GetValueOrDefault(m)), maxK))}")));
+            md.Append(
+                string.Join(
+                    ",",
+                    modes.Select(m =>
+                        $" {m} {Pct(RetrievalMetrics.RecallAt(group.Select(r => r.ArticleRank.GetValueOrDefault(m)), maxK))}"
+                    )
+                )
+            );
             md.Append(';');
         }
 
@@ -94,15 +126,35 @@ public static class EvaluationReport
             var withCitation = answeredAnswerable.Count(r => r.Answer!.CitedChunkIds.Count > 0);
 
             md.Append("| Answers | Value |\n|---|---|\n");
-            md.Append(c, $"| Answerable questions answered | {answeredAnswerable.Count} / {askedAnswerable} ({Pct(Ratio(answeredAnswerable.Count, askedAnswerable))}) |\n");
-            md.Append(c, $"| Answerable questions refused (\"I don't know\") | {falseRefusals} / {askedAnswerable} |\n");
-            md.Append(c, $"| Unanswerable questions correctly refused | {correctRefusals} / {askedUnanswerable} ({Pct(Ratio(correctRefusals, askedUnanswerable))}) |\n");
+            md.Append(
+                c,
+                $"| Answerable questions answered | {answeredAnswerable.Count} / {askedAnswerable} ({Pct(Ratio(answeredAnswerable.Count, askedAnswerable))}) |\n"
+            );
+            md.Append(
+                c,
+                $"| Answerable questions refused (\"I don't know\") | {falseRefusals} / {askedAnswerable} |\n"
+            );
+            md.Append(
+                c,
+                $"| Unanswerable questions correctly refused | {correctRefusals} / {askedUnanswerable} ({Pct(Ratio(correctRefusals, askedUnanswerable))}) |\n"
+            );
             md.Append(c, $"| Answers with at least one citation | {withCitation} / {answeredAnswerable.Count} |\n");
-            md.Append(c, $"| Judged supported by their sources (LLM judge `{info.JudgeModel ?? "none"}`) | {supported} / {judged.Count} ({Pct(Ratio(supported, judged.Count))}) |\n");
+            md.Append(
+                c,
+                $"| Judged supported by their sources (LLM judge `{info.JudgeModel ?? "none"}`) | {supported} / {judged.Count} ({Pct(Ratio(supported, judged.Count))}) |\n"
+            );
             md.Append(c, $"| Judge verdict unclear | {asked.Count(r => r.Verdict == JudgeVerdict.Unclear)} |\n");
-            md.Append(c, $"| Median answer time | {RetrievalMetrics.Median(asked.Select(r => r.Answer!.TotalMilliseconds)):N0} ms |\n");
-            md.Append(c, $"| Mean tokens per answer (in / out) | {asked.Average(r => r.Answer!.InputTokens):F0} / {asked.Average(r => r.Answer!.OutputTokens):F0} |\n");
-            md.Append("| Judge agreement with hand check | pending: fill in `eval/judgements-to-verify.json`, then run `scoreJudgeAgreement` |\n\n");
+            md.Append(
+                c,
+                $"| Median answer time | {RetrievalMetrics.Median(asked.Select(r => r.Answer!.TotalMilliseconds)):N0} ms |\n"
+            );
+            md.Append(
+                c,
+                $"| Mean tokens per answer (in / out) | {asked.Average(r => r.Answer!.InputTokens):F0} / {asked.Average(r => r.Answer!.OutputTokens):F0} |\n"
+            );
+            md.Append(
+                "| Judge agreement with hand check | pending: fill in `eval/judgements-to-verify.json`, then run `scoreJudgeAgreement` |\n\n"
+            );
         }
 
         var errors = results.Count(r => r.Error is not null);

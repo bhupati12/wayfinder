@@ -29,7 +29,10 @@ public class AnswerServiceTests
         Assert.Equal("https://en.wikivoyage.org/wiki/Kyoto", response.Citations[0].SourceUrl);
         Assert.Equal("Kyoto", response.Citations[0].ArticleTitle);
         Assert.Equal(1, response.Metadata.InvalidCitations); // [7] matches no source
-        Assert.Equal((100, 2, 2), (response.Metadata.InputTokens, response.Metadata.SourcesRetrieved, response.Metadata.SourcesUsed));
+        Assert.Equal(
+            (100, 2, 2),
+            (response.Metadata.InputTokens, response.Metadata.SourcesRetrieved, response.Metadata.SourcesUsed)
+        );
         Assert.Equal("answer-prompt-v1", response.Metadata.PromptVersion);
         Assert.Equal("fake-chat", response.Metadata.Model);
         Assert.Contains("Wikivoyage", response.Attribution);
@@ -68,7 +71,8 @@ public class AnswerServiceTests
         }
 
         // 2048 window - 200 answer - prompt - 100 margin leaves room for three sources of ~490 tokens.
-        var response = await Service(contextWindow: 2048, maxOutput: 200, margin: 100).AskAsync("Cherry trees?", null, CancellationToken.None);
+        var response = await Service(contextWindow: 2048, maxOutput: 200, margin: 100)
+            .AskAsync("Cherry trees?", null, CancellationToken.None);
 
         Assert.Equal(6, response.Metadata.SourcesRetrieved);
         Assert.Equal(3, response.Metadata.SourcesUsed);
@@ -125,7 +129,20 @@ public class AnswerServiceTests
         new(
             search,
             chat,
+            new ConceptEmbeddingClient(),
             new PromptBuilder(),
+            new ResponseCache(
+                new Microsoft.Extensions.Caching.Distributed.MemoryDistributedCache(
+                    MsOptions.Create(new Microsoft.Extensions.Caching.Memory.MemoryDistributedCacheOptions())
+                ),
+                MsOptions.Create(new CachingOptions { Enabled = false }),
+                NullLogger<ResponseCache>.Instance
+            ),
+            new UsageTracker(
+                MsOptions.Create(new CostCapOptions()),
+                TimeProvider.System,
+                NullLogger<UsageTracker>.Instance
+            ),
             new TiktokenTokenCounter(),
             MsOptions.Create(new ChatOptions { ContextWindowTokens = contextWindow, MaxOutputTokens = maxOutput }),
             MsOptions.Create(new AnswerOptions { SafetyMarginTokens = margin }),
@@ -149,7 +166,20 @@ public class AnswerServiceTests
                 }
             );
 
-        public Task<SearchResponse> SearchAsync(string query, SearchMode mode, int k, CancellationToken cancellationToken) =>
-            Task.FromResult(new SearchResponse { Query = query, Mode = mode, K = k, Results = items.Take(k).ToList() });
+        public Task<SearchResponse> SearchAsync(
+            string query,
+            SearchMode mode,
+            int k,
+            CancellationToken cancellationToken
+        ) =>
+            Task.FromResult(
+                new SearchResponse
+                {
+                    Query = query,
+                    Mode = mode,
+                    K = k,
+                    Results = items.Take(k).ToList(),
+                }
+            );
     }
 }

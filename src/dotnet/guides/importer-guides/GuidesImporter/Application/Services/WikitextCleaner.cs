@@ -19,26 +19,69 @@ public sealed partial class WikitextCleaner : IWikitextCleaner
     /// <summary>Listing templates. Each becomes one line of text.</summary>
     private static readonly HashSet<string> ListingTemplates = new(StringComparer.OrdinalIgnoreCase)
     {
-        "listing", "see", "do", "buy", "eat", "drink", "sleep", "go", "around", "learn", "work",
+        "listing",
+        "see",
+        "do",
+        "buy",
+        "eat",
+        "drink",
+        "sleep",
+        "go",
+        "around",
+        "learn",
+        "work",
     };
 
     /// <summary>Inline templates whose first positional argument is the visible text.</summary>
     private static readonly HashSet<string> FirstArgumentTemplates = new(StringComparer.OrdinalIgnoreCase)
     {
-        "iata", "icao", "nowrap", "nobr", "small", "smaller", "big", "smallcaps", "unicode",
-        "abbr", "nobreak", "noitalic", "sic", "w", "wikipedia", "transl",
+        "iata",
+        "icao",
+        "nowrap",
+        "nobr",
+        "small",
+        "smaller",
+        "big",
+        "smallcaps",
+        "unicode",
+        "abbr",
+        "nobreak",
+        "noitalic",
+        "sic",
+        "w",
+        "wikipedia",
+        "transl",
     };
 
     private static readonly HashSet<string> RemovedLinkNamespaces = new(StringComparer.OrdinalIgnoreCase)
     {
-        "file", "image", "media", "category", "template", "user", "special", "help",
+        "file",
+        "image",
+        "media",
+        "category",
+        "template",
+        "user",
+        "special",
+        "help",
     };
 
     /// <summary>Elements whose content is not prose and is removed with the tags.</summary>
     private static readonly string[] RemovedElements =
     [
-        "ref", "gallery", "math", "syntaxhighlight", "source", "mapframe", "maplink", "timeline",
-        "score", "graph", "templatedata", "includeonly", "imagemap", "poem",
+        "ref",
+        "gallery",
+        "math",
+        "syntaxhighlight",
+        "source",
+        "mapframe",
+        "maplink",
+        "timeline",
+        "score",
+        "graph",
+        "templatedata",
+        "includeonly",
+        "imagemap",
+        "poem",
     ];
 
     public string Version => "wikitext-cleaner-v1";
@@ -109,11 +152,8 @@ public sealed partial class WikitextCleaner : IWikitextCleaner
             return string.Empty;
         }
 
-        return BalancedScanner.ReplaceOutermost(
-            text,
-            "{{",
-            "}}",
-            inner => ExpandTemplates(RenderTemplate(inner), depth + 1)
+        return BalancedScanner.ReplaceOutermost(text, "{{", "}}", inner =>
+            ExpandTemplates(RenderTemplate(inner), depth + 1)
         );
     }
 
@@ -287,8 +327,7 @@ public sealed partial class WikitextCleaner : IWikitextCleaner
 
     // ---- Links ------------------------------------------------------------------------------
 
-    private static string ReplaceLinks(string text) =>
-        BalancedScanner.ReplaceOutermost(text, "[[", "]]", RenderLink);
+    private static string ReplaceLinks(string text) => BalancedScanner.ReplaceOutermost(text, "[[", "]]", RenderLink);
 
     private static string RenderLink(string inner)
     {
@@ -470,7 +509,11 @@ public sealed partial class WikitextCleaner : IWikitextCleaner
             {
                 var equals = part.IndexOf('=');
                 var key = equals > 0 ? part[..equals].Trim() : null;
-                if (key is not null && key.Length > 0 && key.All(c => char.IsLetterOrDigit(c) || c is ' ' or '_' or '-'))
+                if (
+                    key is not null
+                    && key.Length > 0
+                    && key.All(c => char.IsLetterOrDigit(c) || c is ' ' or '_' or '-')
+                )
                 {
                     args.named[key] = part[(equals + 1)..].Trim();
                 }
@@ -485,7 +528,12 @@ public sealed partial class WikitextCleaner : IWikitextCleaner
 
         public string Positional(int index)
         {
-            if (named.TryGetValue((index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), out var value))
+            if (
+                named.TryGetValue(
+                    (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    out var value
+                )
+            )
             {
                 return value;
             }

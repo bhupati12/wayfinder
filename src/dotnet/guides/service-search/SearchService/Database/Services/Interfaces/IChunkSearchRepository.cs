@@ -16,7 +16,12 @@ public sealed record ChunkDetails(long ChunkId, string ArticleTitle, string Sect
 public interface IChunkSearchRepository
 {
     /// <summary>Top <paramref name="k"/> chunks embedded by <paramref name="model"/>, by cosine distance to the query vector.</summary>
-    Task<IReadOnlyList<ChunkHit>> VectorAsync(float[] queryVector, string model, int k, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ChunkHit>> VectorAsync(
+        float[] queryVector,
+        string model,
+        int k,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     /// Top <paramref name="k"/> chunks by full-text rank. Query words are OR-ed, so chunks matching
@@ -34,5 +39,8 @@ public interface IChunkSearchRepository
         CancellationToken cancellationToken
     );
 
-    Task<IReadOnlyDictionary<long, ChunkDetails>> GetDetailsAsync(IReadOnlyCollection<long> chunkIds, CancellationToken cancellationToken);
+    Task<IReadOnlyDictionary<long, ChunkDetails>> GetDetailsAsync(
+        IReadOnlyCollection<long> chunkIds,
+        CancellationToken cancellationToken
+    );
 }

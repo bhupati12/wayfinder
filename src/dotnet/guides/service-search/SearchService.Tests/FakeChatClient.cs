@@ -24,10 +24,15 @@ internal sealed class FakeChatClient : IChatClient
     {
         Record(request);
         var text = Reply(request);
-        return Task.FromResult(new ChatCompletion(text, Model, "stop", new ChatUsage(100, text.Split(' ').Length, Estimated: false)));
+        return Task.FromResult(
+            new ChatCompletion(text, Model, "stop", new ChatUsage(100, text.Split(' ').Length, Estimated: false))
+        );
     }
 
-    public async IAsyncEnumerable<ChatStreamUpdate> StreamAsync(ChatRequest request, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<ChatStreamUpdate> StreamAsync(
+        ChatRequest request,
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         Record(request);
         var words = Reply(request).Split(' ');

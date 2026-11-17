@@ -11,7 +11,11 @@ public static partial class CitationParser
         var numbers = new List<int>();
         foreach (Match match in CitationRegex().Matches(answer))
         {
-            foreach (var part in match.Groups["numbers"].Value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            foreach (
+                var part in match
+                    .Groups["numbers"]
+                    .Value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            )
             {
                 if (int.TryParse(part, out var number) && !numbers.Contains(number))
                 {

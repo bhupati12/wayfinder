@@ -26,7 +26,8 @@ public class OpenAiCompatibleEmbeddingClientTests
             .Then(HttpStatusCode.ServiceUnavailable)
             .Then(HttpStatusCode.OK, StubHttpHandler.EmbeddingsJson(Dimensions, [0, 1]));
 
-        var result = await CreateClient(stub).EmbedAsync(["a", "b"], EmbeddingInputType.Document, CancellationToken.None);
+        var result = await CreateClient(stub)
+            .EmbedAsync(["a", "b"], EmbeddingInputType.Document, CancellationToken.None);
 
         Assert.Equal(3, stub.Calls);
         Assert.Equal(2, result.Vectors.Count);
@@ -52,8 +53,8 @@ public class OpenAiCompatibleEmbeddingClientTests
     {
         var stub = new StubHttpHandler().Then(HttpStatusCode.InternalServerError, """{"error":"boom"}""");
 
-        var error = await Assert.ThrowsAsync<LlmProviderException>(
-            () => CreateClient(stub, maxRetries: 3).EmbedAsync(["a"], EmbeddingInputType.Document, CancellationToken.None)
+        var error = await Assert.ThrowsAsync<LlmProviderException>(() =>
+            CreateClient(stub, maxRetries: 3).EmbedAsync(["a"], EmbeddingInputType.Document, CancellationToken.None)
         );
 
         Assert.Equal(4, stub.Calls); // first attempt plus three retries
@@ -70,8 +71,8 @@ public class OpenAiCompatibleEmbeddingClientTests
     {
         var stub = new StubHttpHandler().Then(status);
 
-        var error = await Assert.ThrowsAsync<LlmProviderException>(
-            () => CreateClient(stub).EmbedAsync(["a"], EmbeddingInputType.Document, CancellationToken.None)
+        var error = await Assert.ThrowsAsync<LlmProviderException>(() =>
+            CreateClient(stub).EmbedAsync(["a"], EmbeddingInputType.Document, CancellationToken.None)
         );
 
         Assert.Equal(1, stub.Calls);
@@ -84,7 +85,8 @@ public class OpenAiCompatibleEmbeddingClientTests
     {
         var stub = new StubHttpHandler().Then(HttpStatusCode.OK, StubHttpHandler.EmbeddingsJson(Dimensions, [2, 0, 1]));
 
-        var result = await CreateClient(stub).EmbedAsync(["a", "b", "c"], EmbeddingInputType.Document, CancellationToken.None);
+        var result = await CreateClient(stub)
+            .EmbedAsync(["a", "b", "c"], EmbeddingInputType.Document, CancellationToken.None);
 
         Assert.Equal([0.5f, 1.5f, 2.5f], result.Vectors.Select(v => v[0]));
     }
@@ -94,7 +96,8 @@ public class OpenAiCompatibleEmbeddingClientTests
     {
         var stub = new StubHttpHandler().Then(HttpStatusCode.OK, StubHttpHandler.EmbeddingsJson(Dimensions, [0]));
 
-        await CreateClient(stub, apiKey: "test-key").EmbedAsync(["where to eat"], EmbeddingInputType.Query, CancellationToken.None);
+        await CreateClient(stub, apiKey: "test-key")
+            .EmbedAsync(["where to eat"], EmbeddingInputType.Query, CancellationToken.None);
 
         var (request, body) = Assert.Single(stub.Requests);
         Assert.Equal(HttpMethod.Post, request.Method);
@@ -113,8 +116,8 @@ public class OpenAiCompatibleEmbeddingClientTests
     {
         var stub = new StubHttpHandler().Then(HttpStatusCode.OK, StubHttpHandler.EmbeddingsJson(Dimensions + 1, [0]));
 
-        var error = await Assert.ThrowsAsync<LlmProviderException>(
-            () => CreateClient(stub).EmbedAsync(["a"], EmbeddingInputType.Document, CancellationToken.None)
+        var error = await Assert.ThrowsAsync<LlmProviderException>(() =>
+            CreateClient(stub).EmbedAsync(["a"], EmbeddingInputType.Document, CancellationToken.None)
         );
 
         Assert.Contains("dimensions", error.Message);
@@ -125,17 +128,21 @@ public class OpenAiCompatibleEmbeddingClientTests
     {
         var stub = new StubHttpHandler().Then(HttpStatusCode.OK, StubHttpHandler.EmbeddingsJson(Dimensions, [0]));
 
-        await Assert.ThrowsAsync<LlmProviderException>(
-            () => CreateClient(stub).EmbedAsync(["a", "b"], EmbeddingInputType.Document, CancellationToken.None)
+        await Assert.ThrowsAsync<LlmProviderException>(() =>
+            CreateClient(stub).EmbedAsync(["a", "b"], EmbeddingInputType.Document, CancellationToken.None)
         );
     }
 
     [Fact]
     public async Task Estimates_tokens_when_the_provider_reports_no_usage()
     {
-        var stub = new StubHttpHandler().Then(HttpStatusCode.OK, StubHttpHandler.EmbeddingsJson(Dimensions, [0], promptTokens: null));
+        var stub = new StubHttpHandler().Then(
+            HttpStatusCode.OK,
+            StubHttpHandler.EmbeddingsJson(Dimensions, [0], promptTokens: null)
+        );
 
-        var result = await CreateClient(stub).EmbedAsync(["abcdefghijklmnop"], EmbeddingInputType.Document, CancellationToken.None);
+        var result = await CreateClient(stub)
+            .EmbedAsync(["abcdefghijklmnop"], EmbeddingInputType.Document, CancellationToken.None);
 
         Assert.False(result.TokensReportedByProvider);
         Assert.Equal(5, result.InputTokens); // ("d: " + 16 characters + 3) / 4

@@ -18,7 +18,9 @@ internal sealed class StubHttpHandler : HttpMessageHandler
 
     public StubHttpHandler Then(HttpStatusCode status, string body = "{}")
     {
-        responses.Enqueue(() => new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+        responses.Enqueue(() =>
+            new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") }
+        );
         return this;
     }
 
@@ -28,7 +30,10 @@ internal sealed class StubHttpHandler : HttpMessageHandler
         return this;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken);
         Requests.Add((request, body));
@@ -46,9 +51,13 @@ internal sealed class StubHttpHandler : HttpMessageHandler
     {
         var data = string.Join(
             ',',
-            indexes.Select(i => $"{{\"object\":\"embedding\",\"index\":{i},\"embedding\":[{string.Join(',', Enumerable.Repeat($"{i}.5", dimensions))}]}}")
+            indexes.Select(i =>
+                $"{{\"object\":\"embedding\",\"index\":{i},\"embedding\":[{string.Join(',', Enumerable.Repeat($"{i}.5", dimensions))}]}}"
+            )
         );
-        var usage = promptTokens is null ? "" : $",\"usage\":{{\"prompt_tokens\":{promptTokens},\"total_tokens\":{promptTokens}}}";
+        var usage = promptTokens is null
+            ? ""
+            : $",\"usage\":{{\"prompt_tokens\":{promptTokens},\"total_tokens\":{promptTokens}}}";
         return $"{{\"object\":\"list\",\"model\":\"test-model\",\"data\":[{data}]{usage}}}";
     }
 }

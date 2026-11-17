@@ -10,7 +10,10 @@ namespace SearchService.Tests.IntegrationTests;
 /// <summary>POST /api/ask and /api/ask/stream end to end, with a fake chat model.</summary>
 public sealed class AskApiTests : IClassFixture<SearchApiFactory>
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private readonly SearchApiFactory factory;
     private readonly HttpClient client;
@@ -21,13 +24,13 @@ public sealed class AskApiTests : IClassFixture<SearchApiFactory>
         factory.Embeddings.Failing = false;
         factory.Chat.Failing = false;
         factory.Chat.Reply = _ => "Akita is known for ramen and kiritanpo [1].";
-        client = factory.CreateClient();
+        client = factory.CreateAuthorizedClient();
     }
 
     [Fact]
     public async Task Ask_returns_an_answer_with_citations_tokens_and_timings()
     {
-        var response = await client.PostAsJsonAsync("/api/ask", new { question = "What food is Akita known for?" });
+        var response = await client.PostAsJsonAsync("/api/v1/ask", new { question = "What food is Akita known for?" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = (await response.Content.ReadFromJsonAsync<AskResponse>(Json))!;
@@ -50,7 +53,11 @@ public sealed class AskApiTests : IClassFixture<SearchApiFactory>
     {
         factory.Chat.Reply = _ => "I don't know based on the available guides.";
 
-        var body = (await (await client.PostAsJsonAsync("/api/ask", new { question = "Who won the 1998 football world cup?" })).Content.ReadFromJsonAsync<AskResponse>(Json))!;
+        var body = (
+            await (
+                await client.PostAsJsonAsync("/api/v1/ask", new { question = "Who won the 1998 football world cup?" })
+            ).Content.ReadFromJsonAsync<AskResponse>(Json)
+        )!;
 
         Assert.False(body.Answered);
         Assert.Empty(body.Citations);
@@ -59,7 +66,7 @@ public sealed class AskApiTests : IClassFixture<SearchApiFactory>
     [Fact]
     public async Task Stream_sends_sources_then_tokens_then_done()
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/ask/stream")
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/ask/stream")
         {
             Content = JsonContent.Create(new { question = "What food is Akita known for?" }),
         };
@@ -71,7 +78,10 @@ public sealed class AskApiTests : IClassFixture<SearchApiFactory>
         var events = ParseEvents(await response.Content.ReadAsStringAsync());
         Assert.Equal("sources", events[0].Name);
         Assert.Equal("done", events[^1].Name);
-        var tokens = events.Where(e => e.Name == "token").Select(e => JsonDocument.Parse(e.Data).RootElement.GetProperty("text").GetString()).ToList();
+        var tokens = events
+            .Where(e => e.Name == "token")
+            .Select(e => JsonDocument.Parse(e.Data).RootElement.GetProperty("text").GetString())
+            .ToList();
         Assert.True(tokens.Count > 1);
         Assert.Equal("Akita is known for ramen and kiritanpo [1].", string.Concat(tokens));
 
@@ -84,14 +94,17 @@ public sealed class AskApiTests : IClassFixture<SearchApiFactory>
     {
         factory.Chat.Failing = true;
 
-        var ask = await client.PostAsJsonAsync("/api/ask", new { question = "What food is Akita known for?" });
+        var ask = await client.PostAsJsonAsync("/api/v1/ask", new { question = "What food is Akita known for?" });
         Assert.Equal(HttpStatusCode.ServiceUnavailable, ask.StatusCode);
         Assert.Equal("application/problem+json", ask.Content.Headers.ContentType?.MediaType);
 
-        var stream = await client.PostAsJsonAsync("/api/ask/stream", new { question = "What food is Akita known for?" });
+        var stream = await client.PostAsJsonAsync(
+            "/api/v1/ask/stream",
+            new { question = "What food is Akita known for?" }
+        );
         Assert.Equal(HttpStatusCode.ServiceUnavailable, stream.StatusCode);
 
-        var search = await client.GetAsync("/api/search?q=ramen");
+        var search = await client.GetAsync("/api/v1/search?q=ramen");
         Assert.Equal(HttpStatusCode.OK, search.StatusCode);
     }
 
@@ -102,7 +115,10 @@ public sealed class AskApiTests : IClassFixture<SearchApiFactory>
     [InlineData("""{"question":"What food is Akita known for?","k":21}""")]
     public async Task Invalid_ask_requests_get_problem_details(string json)
     {
-        var response = await client.PostAsync("/api/ask", new StringContent(json, Encoding.UTF8, "application/json"));
+        var response = await client.PostAsync(
+            "/api/v1/ask",
+            new StringContent(json, Encoding.UTF8, "application/json")
+        );
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);

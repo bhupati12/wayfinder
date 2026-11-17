@@ -64,10 +64,7 @@ public class WikitextCleanerTests
                 "Peacock: Indian food. Address: Yabase 4. Hours: 11:00-22:00. Price: ¥1,000."
             },
             { "{{go\n| name=Aioi Station | alt= | url= \n| content=\n}}", "Aioi Station" },
-            {
-                "{{sleep|name=Inn|checkin=15:00|checkout=10:00}}",
-                "Inn: Check-in: 15:00. Check-out: 10:00."
-            },
+            { "{{sleep|name=Inn|checkin=15:00|checkout=10:00}}", "Inn: Check-in: 15:00. Check-out: 10:00." },
             { "{{listing|name=[[Himeji Castle]]|content=See it.}}", "Himeji Castle: See it." },
             { "{{do|name=Dive|content=Call {{phone|123}} first.}}", "Dive: Call first." },
         };
@@ -116,7 +113,10 @@ public class WikitextCleanerTests
 
         Assert.StartsWith("Aioi (相生) is a small port city in western Hyogo.", text);
         Assert.Contains("== See ==", text);
-        Assert.Contains("- Kanjōsan Castle Ruins (感状山城跡): Remains of a Muromachi period castle built in the 13th century.", text);
+        Assert.Contains(
+            "- Kanjōsan Castle Ruins (感状山城跡): Remains of a Muromachi period castle built in the 13th century.",
+            text
+        );
         Assert.Contains("- Aioi Station", text);
         Assert.Contains("- Himeji", text);
         Assert.Contains("Japanese-only guide site", text);

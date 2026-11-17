@@ -1,0 +1,21 @@
+{
+  "query": "ramen",
+  "mode": "Hybrid",
+  "k": 1,
+  "degraded": false,
+  "degradedReason": null,
+  "elapsedMilliseconds": 12,
+  "results": [
+    {
+      "chunkId": 1,
+      "articleTitle": "Akita",
+      "section": "Eat",
+      "text": "Akita is famous for ramen.",
+      "sourceUrl": "https://en.wikivoyage.org/wiki/Akita",
+      "score": 0.0328,
+      "vectorRank": 1,
+      "keywordRank": 1
+    }
+  ],
+  "attribution": "Guide content from Wikivoyage (https://www.wikivoyage.org/), licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Each result links to its source article."
+}

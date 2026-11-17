@@ -1,14 +1,22 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DomainModels.Guides.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SearchService.Application.Services.Interfaces;
 
 namespace SearchService.Controllers;
 
 /// <summary>Grounded answers with citations, as JSON or as a server-sent event stream.</summary>
+/// <remarks>Requires an API key in the X-Api-Key header; rate limited per key.</remarks>
 [ApiController]
-[Route("api/ask")]
+[Route("api/v1/ask")]
+[Authorize]
+[EnableRateLimiting(Startup.AskPolicy)]
+[RequestTimeout(Startup.AskPolicy)]
+[RequestSizeLimit(16 * 1024)]
 public sealed class AskController : ControllerBase
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
@@ -30,6 +38,8 @@ public sealed class AskController : ControllerBase
     [HttpPost]
     [ProducesResponseType<AskResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
     public Task<AskResponse> Ask([FromBody] AskRequest request, CancellationToken cancellationToken) =>
         answers.AskAsync(request.Question!, request.K, cancellationToken);
@@ -46,7 +56,9 @@ public sealed class AskController : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
     public async Task Stream([FromBody] AskRequest request, CancellationToken cancellationToken)
     {
-        await using var events = answers.StreamAsync(request.Question!, request.K, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        await using var events = answers
+            .StreamAsync(request.Question!, request.K, cancellationToken)
+            .GetAsyncEnumerator(cancellationToken);
 
         // The first event needs retrieval and the model's first token; if either fails, the
         // exception reaches the exception handler while a proper error status can still be sent.
@@ -67,7 +79,11 @@ public sealed class AskController : ControllerBase
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await WriteEventAsync("error", new { title = "The answer could not be completed.", detail = ex.Message }, CancellationToken.None);
+            await WriteEventAsync(
+                "error",
+                new { title = "The answer could not be completed.", detail = ex.Message },
+                CancellationToken.None
+            );
         }
     }
 
@@ -83,7 +99,10 @@ public sealed class AskController : ControllerBase
     private async Task WriteEventAsync<T>(string name, T payload, CancellationToken cancellationToken)
     {
         // JSON never contains a raw newline, so each event's data fits on one "data:" line.
-        await Response.WriteAsync($"event: {name}\ndata: {JsonSerializer.Serialize(payload, Json)}\n\n", cancellationToken);
+        await Response.WriteAsync(
+            $"event: {name}\ndata: {JsonSerializer.Serialize(payload, Json)}\n\n",
+            cancellationToken
+        );
         await Response.Body.FlushAsync(cancellationToken);
     }
 }

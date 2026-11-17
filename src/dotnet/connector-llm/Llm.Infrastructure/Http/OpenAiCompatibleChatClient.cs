@@ -109,7 +109,11 @@ public sealed class OpenAiCompatibleChatClient : IChatClient
         yield return new ChatStreamUpdate(null, finishReason, usage ?? Estimate(request, text.ToString()));
     }
 
-    private async Task<HttpResponseMessage> SendAsync(ChatRequest request, bool stream, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendAsync(
+        ChatRequest request,
+        bool stream,
+        CancellationToken cancellationToken
+    )
     {
         var body = new CompletionRequest(
             options.Model,

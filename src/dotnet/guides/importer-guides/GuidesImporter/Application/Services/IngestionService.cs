@@ -73,16 +73,34 @@ public sealed partial class IngestionService : IIngestionService
         try
         {
             await RunAsync(dumpPath, summary, stopwatch, cancellationToken);
-            await runs.FinishAsync(summary, IngestionRunStatus.Succeeded, clock.GetUtcNow(), null, CancellationToken.None);
+            await runs.FinishAsync(
+                summary,
+                IngestionRunStatus.Succeeded,
+                clock.GetUtcNow(),
+                null,
+                CancellationToken.None
+            );
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await runs.FinishAsync(summary, IngestionRunStatus.Cancelled, clock.GetUtcNow(), null, CancellationToken.None);
+            await runs.FinishAsync(
+                summary,
+                IngestionRunStatus.Cancelled,
+                clock.GetUtcNow(),
+                null,
+                CancellationToken.None
+            );
             throw;
         }
         catch (Exception ex)
         {
-            await runs.FinishAsync(summary, IngestionRunStatus.Failed, clock.GetUtcNow(), ex.Message, CancellationToken.None);
+            await runs.FinishAsync(
+                summary,
+                IngestionRunStatus.Failed,
+                clock.GetUtcNow(),
+                ex.Message,
+                CancellationToken.None
+            );
             throw;
         }
 
@@ -101,7 +119,12 @@ public sealed partial class IngestionService : IIngestionService
         return summary;
     }
 
-    private async Task RunAsync(string dumpPath, IngestionSummary summary, Stopwatch stopwatch, CancellationToken cancellationToken)
+    private async Task RunAsync(
+        string dumpPath,
+        IngestionSummary summary,
+        Stopwatch stopwatch,
+        CancellationToken cancellationToken
+    )
     {
         IReadOnlySet<string>? region = null;
         var regions = options.Regions.Where(r => !string.IsNullOrWhiteSpace(r)).ToList();
@@ -174,7 +197,11 @@ public sealed partial class IngestionService : IIngestionService
         return region is null || region.Contains(WikiTitles.Normalize(page.Title));
     }
 
-    private async Task FlushAsync(List<PreparedArticle> batch, IngestionSummary summary, CancellationToken cancellationToken)
+    private async Task FlushAsync(
+        List<PreparedArticle> batch,
+        IngestionSummary summary,
+        CancellationToken cancellationToken
+    )
     {
         if (batch.Count == 0)
         {
@@ -218,7 +245,11 @@ public sealed partial class IngestionService : IIngestionService
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 // One bad article should not sink the batch: retry one at a time to isolate it.
-                logger.LogWarning(ex, "Batch write failed; retrying {Count} articles one at a time", added.Count + updated.Count);
+                logger.LogWarning(
+                    ex,
+                    "Batch write failed; retrying {Count} articles one at a time",
+                    added.Count + updated.Count
+                );
                 await SaveIndividuallyAsync(added, updated, summary, cancellationToken);
             }
         }
@@ -238,7 +269,12 @@ public sealed partial class IngestionService : IIngestionService
         {
             try
             {
-                await articles.SaveBatchAsync(isNew ? [article] : [], isNew ? [] : [article], clock.GetUtcNow(), cancellationToken);
+                await articles.SaveBatchAsync(
+                    isNew ? [article] : [],
+                    isNew ? [] : [article],
+                    clock.GetUtcNow(),
+                    cancellationToken
+                );
                 Count(summary, isNew ? [article] : [], isNew ? [] : [article]);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -249,7 +285,11 @@ public sealed partial class IngestionService : IIngestionService
         }
     }
 
-    private static void Count(IngestionSummary summary, IReadOnlyCollection<PreparedArticle> added, IReadOnlyCollection<PreparedArticle> updated)
+    private static void Count(
+        IngestionSummary summary,
+        IReadOnlyCollection<PreparedArticle> added,
+        IReadOnlyCollection<PreparedArticle> updated
+    )
     {
         summary.ArticlesAdded += added.Count;
         summary.ArticlesUpdated += updated.Count;

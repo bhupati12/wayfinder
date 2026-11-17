@@ -33,7 +33,12 @@ public sealed class ScoreJudgeAgreementJob : ICronJob
     private readonly TimeProvider clock;
     private readonly ILogger<ScoreJudgeAgreementJob> logger;
 
-    public ScoreJudgeAgreementJob(IOptions<EvalOptions> options, IHostEnvironment environment, TimeProvider clock, ILogger<ScoreJudgeAgreementJob> logger)
+    public ScoreJudgeAgreementJob(
+        IOptions<EvalOptions> options,
+        IHostEnvironment environment,
+        TimeProvider clock,
+        ILogger<ScoreJudgeAgreementJob> logger
+    )
     {
         this.options = options.Value;
         this.environment = environment;
@@ -47,9 +52,15 @@ public sealed class ScoreJudgeAgreementJob : ICronJob
     {
         var path = Path.GetFullPath(options.JudgementsToVerifyPath, environment.ContentRootPath);
         await using var stream = File.OpenRead(path);
-        var items = await JsonSerializer.DeserializeAsync<List<JudgementToVerify>>(stream, EvaluationService.Json, cancellationToken) ?? [];
+        var items = await JsonSerializer.DeserializeAsync<List<JudgementToVerify>>(
+            stream,
+            EvaluationService.Json,
+            cancellationToken
+        ) ?? [];
 
-        var checkedItems = items.Where(i => i.HumanVerdict is JudgeVerdict.Supported or JudgeVerdict.Unsupported).ToList();
+        var checkedItems = items
+            .Where(i => i.HumanVerdict is JudgeVerdict.Supported or JudgeVerdict.Unsupported)
+            .ToList();
         if (checkedItems.Count == 0)
         {
             throw new InvalidOperationException($"No item in {path} has a humanVerdict yet.");
@@ -63,7 +74,11 @@ public sealed class ScoreJudgeAgreementJob : ICronJob
                 + $"judge said unsupported, human said supported: {checkedItems.Count(i => i.JudgeVerdict != JudgeVerdict.Supported && i.HumanVerdict == JudgeVerdict.Supported)}.\n\n"
         );
 
-        await File.AppendAllTextAsync(Path.GetFullPath(options.ReportPath, environment.ContentRootPath), line, cancellationToken);
+        await File.AppendAllTextAsync(
+            Path.GetFullPath(options.ReportPath, environment.ContentRootPath),
+            line,
+            cancellationToken
+        );
         logger.LogInformation("Judge agreement {Agree}/{Total}", agree, checkedItems.Count);
     }
 }

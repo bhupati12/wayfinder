@@ -1,7 +1,7 @@
-using Llm.Infrastructure.Services;
-using Llm.Core.Interfaces;
 using GuidesImporter.Application.Helpers;
 using GuidesImporter.Application.Services;
+using Llm.Core.Interfaces;
+using Llm.Infrastructure.Services;
 using static GuidesImporter.Tests.TestSupport;
 
 namespace GuidesImporter.Tests.UnitTests;
@@ -79,9 +79,7 @@ public class ChunkerTests
     [Fact]
     public void Merged_sections_keep_their_heading_lines_in_the_text()
     {
-        var chunk = Assert.Single(
-            Chunker(words, 20, 40, 5).Chunk($"{Sentence("x", 3)}\n== A ==\n{Sentence("a", 3)}")
-        );
+        var chunk = Assert.Single(Chunker(words, 20, 40, 5).Chunk($"{Sentence("x", 3)}\n== A ==\n{Sentence("a", 3)}"));
 
         Assert.Equal("X1 x2 x3.\nA\nA1 a2 a3.", chunk.Text);
     }
@@ -197,7 +195,12 @@ public class ChunkerTests
 
     [Theory]
     [MemberData(nameof(RealArticleCases))]
-    public void Real_article_chunks_respect_the_limits_and_cover_every_sentence(string fixture, int min, int max, int overlap)
+    public void Real_article_chunks_respect_the_limits_and_cover_every_sentence(
+        string fixture,
+        int min,
+        int max,
+        int overlap
+    )
     {
         var tokenizer = new TiktokenTokenCounter();
         var clean = new WikitextCleaner().Clean(ReadFixture(fixture));
@@ -209,7 +212,10 @@ public class ChunkerTests
         Assert.All(chunks, c => Assert.InRange(c.TokenCount, 1, max));
         Assert.All(chunks, c => Assert.Equal(tokenizer.Count(c.Text), c.TokenCount));
 
-        var lines = clean.Split('\n').Where(l => l.Length > 0 && !l.StartsWith("==", StringComparison.Ordinal)).ToList();
+        var lines = clean
+            .Split('\n')
+            .Where(l => l.Length > 0 && !l.StartsWith("==", StringComparison.Ordinal))
+            .ToList();
         // Sentences longer than the maximum are cut between words, so only shorter ones appear whole.
         foreach (var sentence in lines.SelectMany(SentenceSplitter.Split).Where(s => tokenizer.Count(s) < max))
         {
@@ -225,7 +231,10 @@ public class ChunkerTests
             var lastLine = chunk.Text.Split('\n')[^1];
             var lastSentence = SentenceSplitter.Split(lastLine)[^1];
             Assert.True(
-                lines.Any(l => l.EndsWith(lastSentence, StringComparison.Ordinal) || l.Contains(lastSentence + " ", StringComparison.Ordinal)),
+                lines.Any(l =>
+                    l.EndsWith(lastSentence, StringComparison.Ordinal)
+                    || l.Contains(lastSentence + " ", StringComparison.Ordinal)
+                ),
                 $"Chunk {chunk.Position} ends inside a sentence: ...{lastSentence}"
             );
         }

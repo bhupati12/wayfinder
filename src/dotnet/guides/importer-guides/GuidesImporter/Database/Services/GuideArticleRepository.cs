@@ -23,7 +23,11 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
         return await db
             .Articles.AsNoTracking()
             .Where(a => pageIds.Contains(a.PageId))
-            .Select(a => new { a.PageId, State = new StoredArticleState(a.Id, a.Title, a.RawTextHash, a.ProcessingSignature) })
+            .Select(a => new
+            {
+                a.PageId,
+                State = new StoredArticleState(a.Id, a.Title, a.RawTextHash, a.ProcessingSignature),
+            })
             .ToDictionaryAsync(x => x.PageId, x => x.State, cancellationToken);
     }
 
@@ -99,7 +103,9 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
     {
         var rows = await db
             .Chunks.AsNoTracking()
-            .Where(c => articleIds.Contains(c.ArticleId) && c.Embedding != null && c.EmbeddedContentHash == c.ContentHash)
+            .Where(c =>
+                articleIds.Contains(c.ArticleId) && c.Embedding != null && c.EmbeddedContentHash == c.ContentHash
+            )
             .Select(c => new ReusableEmbedding(c.ContentHash, c.Embedding!, c.EmbeddingModel!, c.EmbeddedAt))
             .ToListAsync(cancellationToken);
 
@@ -128,5 +134,10 @@ public sealed class GuideArticleRepository : IGuideArticleRepository
         return entity;
     }
 
-    private sealed record ReusableEmbedding(string ContentHash, Pgvector.Vector Embedding, string Model, DateTimeOffset? EmbeddedAt);
+    private sealed record ReusableEmbedding(
+        string ContentHash,
+        Pgvector.Vector Embedding,
+        string Model,
+        DateTimeOffset? EmbeddedAt
+    );
 }

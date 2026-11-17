@@ -37,14 +37,18 @@ public static class LlmServiceCollectionExtensions
             }
         );
 
-        builder.AddResilienceHandler(
-            ResiliencePipelineName,
-            (pipeline, context) =>
-            {
-                var o = context.ServiceProvider.GetRequiredService<IOptions<EmbeddingOptions>>().Value;
-                AddStandardStrategies(pipeline, o.TotalTimeoutSeconds, o.AttemptTimeoutSeconds, o.MaxRetries, o.RetryBaseDelay, o.CircuitBreakSeconds);
-            }
-        );
+        builder.AddResilienceHandler(ResiliencePipelineName, (pipeline, context) =>
+        {
+            var o = context.ServiceProvider.GetRequiredService<IOptions<EmbeddingOptions>>().Value;
+            AddStandardStrategies(
+                pipeline,
+                o.TotalTimeoutSeconds,
+                o.AttemptTimeoutSeconds,
+                o.MaxRetries,
+                o.RetryBaseDelay,
+                o.CircuitBreakSeconds
+            );
+        });
 
         return builder;
     }
@@ -70,14 +74,18 @@ public static class LlmServiceCollectionExtensions
             }
         );
 
-        builder.AddResilienceHandler(
-            "chat",
-            (pipeline, context) =>
-            {
-                var o = context.ServiceProvider.GetRequiredService<IOptions<ChatOptions>>().Value;
-                AddStandardStrategies(pipeline, o.TotalTimeoutSeconds, o.AttemptTimeoutSeconds, o.MaxRetries, o.RetryBaseDelay, o.CircuitBreakSeconds);
-            }
-        );
+        builder.AddResilienceHandler("chat", (pipeline, context) =>
+        {
+            var o = context.ServiceProvider.GetRequiredService<IOptions<ChatOptions>>().Value;
+            AddStandardStrategies(
+                pipeline,
+                o.TotalTimeoutSeconds,
+                o.AttemptTimeoutSeconds,
+                o.MaxRetries,
+                o.RetryBaseDelay,
+                o.CircuitBreakSeconds
+            );
+        });
 
         return builder;
     }

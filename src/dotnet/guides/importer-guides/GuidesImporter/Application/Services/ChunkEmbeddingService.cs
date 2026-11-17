@@ -53,7 +53,12 @@ public sealed class ChunkEmbeddingService : IChunkEmbeddingService
         var model = client.Model;
         var pending = await chunks.CountPendingAsync(model, cancellationToken);
         var runId = await runs.StartAsync(model, pending, clock.GetUtcNow(), cancellationToken);
-        var summary = new EmbeddingSummary { RunId = runId, Model = model, ChunksPending = pending };
+        var summary = new EmbeddingSummary
+        {
+            RunId = runId,
+            Model = model,
+            ChunksPending = pending,
+        };
         var stopwatch = Stopwatch.StartNew();
 
         logger.LogInformation(
@@ -67,16 +72,34 @@ public sealed class ChunkEmbeddingService : IChunkEmbeddingService
         try
         {
             await RunAsync(summary, stopwatch, cancellationToken);
-            await runs.FinishAsync(summary, IngestionRunStatus.Succeeded, clock.GetUtcNow(), null, CancellationToken.None);
+            await runs.FinishAsync(
+                summary,
+                IngestionRunStatus.Succeeded,
+                clock.GetUtcNow(),
+                null,
+                CancellationToken.None
+            );
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await runs.FinishAsync(summary, IngestionRunStatus.Cancelled, clock.GetUtcNow(), null, CancellationToken.None);
+            await runs.FinishAsync(
+                summary,
+                IngestionRunStatus.Cancelled,
+                clock.GetUtcNow(),
+                null,
+                CancellationToken.None
+            );
             throw;
         }
         catch (Exception ex)
         {
-            await runs.FinishAsync(summary, IngestionRunStatus.Failed, clock.GetUtcNow(), ex.Message, CancellationToken.None);
+            await runs.FinishAsync(
+                summary,
+                IngestionRunStatus.Failed,
+                clock.GetUtcNow(),
+                ex.Message,
+                CancellationToken.None
+            );
             throw;
         }
 
@@ -96,7 +119,8 @@ public sealed class ChunkEmbeddingService : IChunkEmbeddingService
 
     private async Task RunAsync(EmbeddingSummary summary, Stopwatch stopwatch, CancellationToken cancellationToken)
     {
-        var limit = jobOptions.MaxChunks > 0 ? Math.Min(jobOptions.MaxChunks, summary.ChunksPending) : summary.ChunksPending;
+        var limit =
+            jobOptions.MaxChunks > 0 ? Math.Min(jobOptions.MaxChunks, summary.ChunksPending) : summary.ChunksPending;
         var afterId = 0L;
 
         while (summary.ChunksEmbedded + summary.ChunksFailed < limit)
@@ -121,7 +145,11 @@ public sealed class ChunkEmbeddingService : IChunkEmbeddingService
         LogProgress(summary, limit, stopwatch);
     }
 
-    private async Task EmbedBatchAsync(IReadOnlyList<PendingChunk> batch, EmbeddingSummary summary, CancellationToken cancellationToken)
+    private async Task EmbedBatchAsync(
+        IReadOnlyList<PendingChunk> batch,
+        EmbeddingSummary summary,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -157,7 +185,11 @@ public sealed class ChunkEmbeddingService : IChunkEmbeddingService
         // HttpClient pipeline; they propagate and fail the run, which the next run resumes.
     }
 
-    private async Task<EmbeddingResult> EmbedAsync(IReadOnlyList<PendingChunk> batch, EmbeddingSummary summary, CancellationToken cancellationToken)
+    private async Task<EmbeddingResult> EmbedAsync(
+        IReadOnlyList<PendingChunk> batch,
+        EmbeddingSummary summary,
+        CancellationToken cancellationToken
+    )
     {
         var inputs = batch.Select(c => ChunkEmbeddingText.Build(c.ArticleTitle, c.SectionHeading, c.Text)).ToList();
         summary.Requests++;
@@ -169,14 +201,22 @@ public sealed class ChunkEmbeddingService : IChunkEmbeddingService
         return result;
     }
 
-    private async Task SaveAsync(IReadOnlyList<PendingChunk> batch, EmbeddingResult result, EmbeddingSummary summary, CancellationToken cancellationToken)
+    private async Task SaveAsync(
+        IReadOnlyList<PendingChunk> batch,
+        EmbeddingResult result,
+        EmbeddingSummary summary,
+        CancellationToken cancellationToken
+    )
     {
         var embeddings = batch.Select((c, i) => new ChunkEmbedding(c.Id, c.ContentHash, result.Vectors[i])).ToList();
         var saved = await chunks.SaveAsync(embeddings, summary.Model, clock.GetUtcNow(), cancellationToken);
         summary.ChunksEmbedded += saved;
         if (saved < batch.Count)
         {
-            logger.LogInformation("{Count} chunks changed while being embedded; they stay pending", batch.Count - saved);
+            logger.LogInformation(
+                "{Count} chunks changed while being embedded; they stay pending",
+                batch.Count - saved
+            );
         }
     }
 

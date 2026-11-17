@@ -95,10 +95,27 @@ public sealed class SearchApiFactory : WebApplicationFactory<Program>, IAsyncLif
         return await db.Chunks.Where(c => c.Text == text).Select(c => c.Id).SingleAsync();
     }
 
+    public const string ApiKey = "test-api-key-0123456789";
+
+    /// <summary>A client that sends the test API key.</summary>
+    public HttpClient CreateAuthorizedClient(WebApplicationFactory<Program>? host = null)
+    {
+        var client = (host ?? this).CreateClient();
+        client.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
+        return client;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Guides", container.GetConnectionString());
+        builder.UseSetting("Auth:ApiKeys:0:Name", "test-client");
+        builder.UseSetting("Auth:ApiKeys:0:Key", ApiKey);
+        builder.UseSetting("RateLimiting:AskPermitsPerMinute", "10000");
+        builder.UseSetting("RateLimiting:SearchPermitsPerMinute", "100000");
+        builder.UseSetting("Caching:Enabled", "false");
+        builder.UseSetting("CostCap:DailyTokenCap", "0");
+        builder.UseSetting("CostCap:DailyCostCapUsd", "0");
         builder.ConfigureServices(services =>
         {
             services.Replace(ServiceDescriptor.Singleton<IEmbeddingClient>(Embeddings));

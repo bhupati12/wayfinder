@@ -29,7 +29,11 @@ internal sealed class FakeEmbeddingClient : IEmbeddingClient
 
     public int InputsEmbedded => Calls.Sum(c => c.Count);
 
-    public Task<EmbeddingResult> EmbedAsync(IReadOnlyList<string> inputs, EmbeddingInputType inputType, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> EmbedAsync(
+        IReadOnlyList<string> inputs,
+        EmbeddingInputType inputType,
+        CancellationToken cancellationToken
+    )
     {
         Calls.Add(inputs);
         OnCall?.Invoke(Calls.Count, inputs);

@@ -26,7 +26,10 @@ public sealed class IngestGuidesJobTests : IClassFixture<PostgresFixture>
         Assert.Equal(0, await RunJobAsync("ingestGuides"));
         var first = await LatestRunAsync();
         Assert.Equal(IngestionRunStatus.Succeeded, first.Status);
-        Assert.Equal((3, 0, 0, 0), (first.ArticlesAdded, first.ArticlesUpdated, first.ArticlesSkipped, first.ArticlesFailed));
+        Assert.Equal(
+            (3, 0, 0, 0),
+            (first.ArticlesAdded, first.ArticlesUpdated, first.ArticlesSkipped, first.ArticlesFailed)
+        );
         Assert.NotNull(first.FinishedAt);
 
         var chunksAfterFirst = await SnapshotChunksAsync();
@@ -45,13 +48,24 @@ public sealed class IngestGuidesJobTests : IClassFixture<PostgresFixture>
         Assert.Equal(0, await RunJobAsync("ingestGuides"));
         var second = await LatestRunAsync();
         Assert.NotEqual(first.Id, second.Id);
-        Assert.Equal((0, 0, 3, 0, 0), (second.ArticlesAdded, second.ArticlesUpdated, second.ArticlesSkipped, second.ArticlesFailed, second.ChunksWritten));
+        Assert.Equal(
+            (0, 0, 3, 0, 0),
+            (
+                second.ArticlesAdded,
+                second.ArticlesUpdated,
+                second.ArticlesSkipped,
+                second.ArticlesFailed,
+                second.ChunksWritten
+            )
+        );
         Assert.Equal(chunksAfterFirst, await SnapshotChunksAsync());
 
         // A title that differs from the dump (a rename with no text change) is updated.
         await using (var db = JobHost.CreateContext(postgres.ConnectionString))
         {
-            await db.Articles.Where(a => a.PageId == 381).ExecuteUpdateAsync(s => s.SetProperty(a => a.Title, "Old name"), ct);
+            await db
+                .Articles.Where(a => a.PageId == 381)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.Title, "Old name"), ct);
         }
 
         Assert.Equal(0, await RunJobAsync("ingestGuides"));
@@ -65,10 +79,18 @@ public sealed class IngestGuidesJobTests : IClassFixture<PostgresFixture>
         // Changing a chunking setting changes the processing signature, so every article is rebuilt.
         Assert.Equal(
             0,
-            await RunJobAsync("ingestGuides", ("Ingestion:MaxChunkTokens", "120"), ("Ingestion:MinChunkTokens", "60"), ("Ingestion:OverlapTokens", "20"))
+            await RunJobAsync(
+                "ingestGuides",
+                ("Ingestion:MaxChunkTokens", "120"),
+                ("Ingestion:MinChunkTokens", "60"),
+                ("Ingestion:OverlapTokens", "20")
+            )
         );
         var third = await LatestRunAsync();
-        Assert.Equal((0, 3, 0, 0), (third.ArticlesAdded, third.ArticlesUpdated, third.ArticlesSkipped, third.ArticlesFailed));
+        Assert.Equal(
+            (0, 3, 0, 0),
+            (third.ArticlesAdded, third.ArticlesUpdated, third.ArticlesSkipped, third.ArticlesFailed)
+        );
         var chunksAfterThird = await SnapshotChunksAsync();
         Assert.Equal(third.ChunksWritten, chunksAfterThird.Count);
         Assert.True(chunksAfterThird.Count > chunksAfterFirst.Count);
@@ -90,13 +112,22 @@ public sealed class IngestGuidesJobTests : IClassFixture<PostgresFixture>
         return await db.IngestionRuns.AsNoTracking().OrderByDescending(r => r.Id).FirstAsync();
     }
 
-    private async Task<List<(long Id, long ArticleId, int Position, string ContentHash, int TokenCount)>> SnapshotChunksAsync()
+    private async Task<
+        List<(long Id, long ArticleId, int Position, string ContentHash, int TokenCount)>
+    > SnapshotChunksAsync()
     {
         await using var db = JobHost.CreateContext(postgres.ConnectionString);
         var rows = await db
             .Chunks.AsNoTracking()
             .OrderBy(c => c.Id)
-            .Select(c => new { c.Id, c.ArticleId, c.Position, c.ContentHash, c.TokenCount })
+            .Select(c => new
+            {
+                c.Id,
+                c.ArticleId,
+                c.Position,
+                c.ContentHash,
+                c.TokenCount,
+            })
             .ToListAsync();
         return rows.Select(r => (r.Id, r.ArticleId, r.Position, r.ContentHash, r.TokenCount)).ToList();
     }

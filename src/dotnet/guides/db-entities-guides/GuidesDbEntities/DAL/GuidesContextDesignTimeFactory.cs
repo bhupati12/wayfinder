@@ -13,8 +13,7 @@ public class GuidesContextDesignTimeFactory : IDesignTimeDbContextFactory<Guides
 {
     public GuidesContext CreateDbContext(string[] args)
     {
-        var connectionString =
-            Environment.GetEnvironmentVariable("ConnectionStrings__Guides")
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Guides")
             ?? "Host=localhost;Database=wayfinder";
 
         var options = new DbContextOptionsBuilder<GuidesContext>();

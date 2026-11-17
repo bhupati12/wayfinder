@@ -65,8 +65,16 @@ public class RetrievalMetricsTests
 public class LlmAnswerJudgeTests
 {
     [Theory]
-    [InlineData("VERDICT: SUPPORTED\nREASON: All claims are in source 1.", JudgeVerdict.Supported, "All claims are in source 1.")]
-    [InlineData("VERDICT: UNSUPPORTED\nREASON: The price is not in the sources.", JudgeVerdict.Unsupported, "The price is not in the sources.")]
+    [InlineData(
+        "VERDICT: SUPPORTED\nREASON: All claims are in source 1.",
+        JudgeVerdict.Supported,
+        "All claims are in source 1."
+    )]
+    [InlineData(
+        "VERDICT: UNSUPPORTED\nREASON: The price is not in the sources.",
+        JudgeVerdict.Unsupported,
+        "The price is not in the sources."
+    )]
     [InlineData("**VERDICT:** UNSUPPORTED", JudgeVerdict.Unsupported, null)]
     [InlineData("verdict: supported", JudgeVerdict.Supported, null)]
     [InlineData("I think it is fine.", JudgeVerdict.Unclear, null)]
@@ -92,7 +100,10 @@ public class EvaluationServiceTests : IDisposable
                 new("u1", "Capital of Kenya?", null, null, "unanswerable", false),
             ]
         );
-        File.WriteAllText(Path.Combine(root, "eval", "questions.json"), JsonSerializer.Serialize(set, EvaluationService.Json));
+        File.WriteAllText(
+            Path.Combine(root, "eval", "questions.json"),
+            JsonSerializer.Serialize(set, EvaluationService.Json)
+        );
     }
 
     [Fact]
@@ -157,7 +168,12 @@ public class EvaluationServiceTests : IDisposable
 
     private sealed class FakeApi : IEvalApiClient
     {
-        public Task<IReadOnlyList<EvalHit>> SearchAsync(string query, string mode, int k, CancellationToken cancellationToken)
+        public Task<IReadOnlyList<EvalHit>> SearchAsync(
+            string query,
+            string mode,
+            int k,
+            CancellationToken cancellationToken
+        )
         {
             IReadOnlyList<EvalHit> hits = (query, mode) switch
             {
@@ -181,17 +197,27 @@ public class EvaluationServiceTests : IDisposable
     {
         public string Model => "fake-judge";
 
-        public Task<(JudgeVerdict Verdict, string? Reason)> JudgeAsync(string question, string answer, IReadOnlyList<string> sources, CancellationToken cancellationToken) =>
-            Task.FromResult<(JudgeVerdict, string?)>((JudgeVerdict.Supported, "fine"));
+        public Task<(JudgeVerdict Verdict, string? Reason)> JudgeAsync(
+            string question,
+            string answer,
+            IReadOnlyList<string> sources,
+            CancellationToken cancellationToken
+        ) => Task.FromResult<(JudgeVerdict, string?)>((JudgeVerdict.Supported, "fine"));
     }
 
     private sealed class FakeChunks : IChunkTextRepository
     {
-        public Task<IReadOnlyDictionary<long, string>> GetTextsAsync(IReadOnlyCollection<long> chunkIds, CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyDictionary<long, string>>(chunkIds.ToDictionary(id => id, id => $"Osaka — Eat\n\nChunk {id} text."));
+        public Task<IReadOnlyDictionary<long, string>> GetTextsAsync(
+            IReadOnlyCollection<long> chunkIds,
+            CancellationToken cancellationToken
+        ) =>
+            Task.FromResult<IReadOnlyDictionary<long, string>>(
+                chunkIds.ToDictionary(id => id, id => $"Osaka — Eat\n\nChunk {id} text.")
+            );
 
-        public Task<(int Articles, int Chunks, string? EmbeddingModel)> DescribeAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<(int, int, string?)>((3, 10, "fake-embed"));
+        public Task<(int Articles, int Chunks, string? EmbeddingModel)> DescribeAsync(
+            CancellationToken cancellationToken
+        ) => Task.FromResult<(int, int, string?)>((3, 10, "fake-embed"));
     }
 
     private sealed class FakeEnvironment(string root) : IHostEnvironment

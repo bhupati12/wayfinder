@@ -25,7 +25,12 @@ public sealed class EvalApiClient : IEvalApiClient
         this.options = options.Value;
     }
 
-    public async Task<IReadOnlyList<EvalHit>> SearchAsync(string query, string mode, int k, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<EvalHit>> SearchAsync(
+        string query,
+        string mode,
+        int k,
+        CancellationToken cancellationToken
+    )
     {
         var url = $"{options.SearchPath}?q={Uri.EscapeDataString(query)}&mode={mode}&k={k}";
         using var response = await http.GetAsync(url, cancellationToken);
@@ -58,7 +63,9 @@ public sealed class EvalApiClient : IEvalApiClient
         if (!response.IsSuccessStatusCode)
         {
             var text = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"{(int)response.StatusCode} from {response.RequestMessage?.RequestUri}: {text[..Math.Min(text.Length, 300)]}");
+            throw new HttpRequestException(
+                $"{(int)response.StatusCode} from {response.RequestMessage?.RequestUri}: {text[..Math.Min(text.Length, 300)]}"
+            );
         }
     }
 

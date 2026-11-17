@@ -16,7 +16,24 @@ internal sealed partial class ConceptEmbeddingClient : IEmbeddingClient
 {
     private static readonly string[][] Concepts =
     [
-        ["ramen", "noodle", "noodles", "food", "eat", "restaurant", "restaurants", "kaiseki", "soup", "dinner", "dinners", "cuisine", "dish", "kiritanpo", "tofu", "street"],
+        [
+            "ramen",
+            "noodle",
+            "noodles",
+            "food",
+            "eat",
+            "restaurant",
+            "restaurants",
+            "kaiseki",
+            "soup",
+            "dinner",
+            "dinners",
+            "cuisine",
+            "dish",
+            "kiritanpo",
+            "tofu",
+            "street",
+        ],
         ["train", "shinkansen", "rail", "bus", "flight", "transport", "travel"],
         ["beach", "beaches", "snorkel", "dive", "sea", "swim", "swimming", "coast"],
         ["temple", "temples", "shrine", "castle", "pagoda", "gates"],
@@ -33,14 +50,20 @@ internal sealed partial class ConceptEmbeddingClient : IEmbeddingClient
     /// <summary>When true every call fails like an unreachable provider.</summary>
     public bool Failing { get; set; }
 
-    public Task<EmbeddingResult> EmbedAsync(IReadOnlyList<string> inputs, EmbeddingInputType inputType, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> EmbedAsync(
+        IReadOnlyList<string> inputs,
+        EmbeddingInputType inputType,
+        CancellationToken cancellationToken
+    )
     {
         if (Failing)
         {
             throw new LlmProviderException("provider down", HttpStatusCode.ServiceUnavailable);
         }
 
-        return Task.FromResult(new EmbeddingResult(inputs.Select(Embed).ToList(), inputs.Count, TokensReportedByProvider: true));
+        return Task.FromResult(
+            new EmbeddingResult(inputs.Select(Embed).ToList(), inputs.Count, TokensReportedByProvider: true)
+        );
     }
 
     public float[] Embed(string text)

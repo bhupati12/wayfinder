@@ -33,7 +33,11 @@ public class GuideChunkConfiguration : IEntityTypeConfiguration<GuideChunk>
 
         // Keyword search: a stored generated tsvector (English stemming) with a GIN index.
         builder
-            .HasGeneratedTsVectorColumn(c => c.SearchVector!, FullTextConfiguration, c => new { c.SectionHeading, c.Text })
+            .HasGeneratedTsVectorColumn(
+                c => c.SearchVector!,
+                FullTextConfiguration,
+                c => new { c.SectionHeading, c.Text }
+            )
             .HasIndex(c => c.SearchVector)
             .HasMethod("GIN");
 

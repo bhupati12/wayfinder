@@ -59,8 +59,8 @@ public class DumpReaderTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => ReadAllAsync(TestSupport.FixturePath("mini-dump.xml"), cts.Token)
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            ReadAllAsync(TestSupport.FixturePath("mini-dump.xml"), cts.Token)
         );
     }
 
@@ -74,7 +74,10 @@ public class DumpReaderTests
         Assert.Equal(expected, WikiTitles.ToUrl("https://en.wikivoyage.org/wiki/", title));
     }
 
-    private static async Task<List<Application.Models.DumpPage>> ReadAllAsync(string path, CancellationToken cancellationToken = default)
+    private static async Task<List<Application.Models.DumpPage>> ReadAllAsync(
+        string path,
+        CancellationToken cancellationToken = default
+    )
     {
         var pages = new List<Application.Models.DumpPage>();
         await foreach (var page in new DumpReader().ReadPagesAsync(path, cancellationToken))

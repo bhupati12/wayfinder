@@ -13,7 +13,11 @@ public sealed record ChatMessage(ChatRole Role, string Content);
 /// <param name="Messages">Conversation so far, system message first.</param>
 /// <param name="MaxOutputTokens">Upper bound on generated tokens; null uses the client's default.</param>
 /// <param name="Temperature">Sampling temperature; null uses the client's default.</param>
-public sealed record ChatRequest(IReadOnlyList<ChatMessage> Messages, int? MaxOutputTokens = null, double? Temperature = null);
+public sealed record ChatRequest(
+    IReadOnlyList<ChatMessage> Messages,
+    int? MaxOutputTokens = null,
+    double? Temperature = null
+);
 
 /// <summary>Token usage of a completion. Estimated is true when the provider reported none.</summary>
 public sealed record ChatUsage(int InputTokens, int OutputTokens, bool Estimated);

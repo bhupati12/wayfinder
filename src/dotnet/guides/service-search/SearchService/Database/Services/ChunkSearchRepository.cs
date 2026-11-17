@@ -21,14 +21,22 @@ public sealed class ChunkSearchRepository : IChunkSearchRepository
         this.options = options.Value;
     }
 
-    public async Task<IReadOnlyList<ChunkHit>> VectorAsync(float[] queryVector, string model, int k, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ChunkHit>> VectorAsync(
+        float[] queryVector,
+        string model,
+        int k,
+        CancellationToken cancellationToken
+    )
     {
         var vector = new Vector(queryVector);
         var efSearch = Math.Max(options.HnswEfSearch, k);
 
         // SET LOCAL only lasts for the transaction, so the setting never leaks to pooled connections.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await db.Database.ExecuteSqlAsync($"SELECT set_config('hnsw.ef_search', {efSearch.ToString(System.Globalization.CultureInfo.InvariantCulture)}, true)", cancellationToken);
+        await db.Database.ExecuteSqlAsync(
+            $"SELECT set_config('hnsw.ef_search', {efSearch.ToString(System.Globalization.CultureInfo.InvariantCulture)}, true)",
+            cancellationToken
+        );
 
         var hits = await db
             .Chunks.AsNoTracking()

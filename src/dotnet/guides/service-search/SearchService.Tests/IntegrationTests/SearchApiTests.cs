@@ -9,7 +9,10 @@ namespace SearchService.Tests.IntegrationTests;
 /// <summary>GET /api/search end to end: HTTP, validation, SQL and fusion against PostgreSQL.</summary>
 public sealed class SearchApiTests : IClassFixture<SearchApiFactory>
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private readonly SearchApiFactory factory;
     private readonly HttpClient client;
@@ -57,7 +60,12 @@ public sealed class SearchApiTests : IClassFixture<SearchApiFactory>
         Assert.Empty(keyword.Results);
 
         var vector = await SearchAsync("q=cuisine&mode=vector&k=3");
-        var foodChunks = new[] { await factory.ChunkIdAsync(0), await factory.ChunkIdAsync(4), await factory.ChunkIdAsync(5) };
+        var foodChunks = new[]
+        {
+            await factory.ChunkIdAsync(0),
+            await factory.ChunkIdAsync(4),
+            await factory.ChunkIdAsync(5),
+        };
         Assert.Equal(3, vector.Results.Count);
         Assert.All(vector.Results, r => Assert.Contains(r.ChunkId, foodChunks));
         Assert.True(vector.Results[0].Score >= vector.Results[1].Score);
@@ -95,7 +103,7 @@ public sealed class SearchApiTests : IClassFixture<SearchApiFactory>
     [InlineData("q=ramen&mode=telepathy", "mode")]
     public async Task Invalid_requests_get_problem_details(string queryString, string field)
     {
-        var response = await client.GetAsync($"/api/search?{queryString}");
+        var response = await client.GetAsync($"/api/v1/search?{queryString}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
@@ -107,7 +115,7 @@ public sealed class SearchApiTests : IClassFixture<SearchApiFactory>
     [Fact]
     public async Task Overlong_query_is_rejected()
     {
-        var response = await client.GetAsync($"/api/search?q={new string('x', 501)}");
+        var response = await client.GetAsync($"/api/v1/search?q={new string('x', 501)}");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -129,7 +137,7 @@ public sealed class SearchApiTests : IClassFixture<SearchApiFactory>
     {
         factory.Embeddings.Failing = true;
 
-        var response = await client.GetAsync("/api/search?q=ramen&mode=vector");
+        var response = await client.GetAsync("/api/v1/search?q=ramen&mode=vector");
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
@@ -139,7 +147,7 @@ public sealed class SearchApiTests : IClassFixture<SearchApiFactory>
 
     private async Task<SearchResponse> SearchAsync(string queryString)
     {
-        var response = await client.GetAsync($"/api/search?{queryString}");
+        var response = await client.GetAsync($"/api/v1/search?{queryString}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<SearchResponse>(Json))!;
     }

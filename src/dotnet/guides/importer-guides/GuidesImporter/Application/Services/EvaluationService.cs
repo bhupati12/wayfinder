@@ -4,8 +4,8 @@ using System.Text.Json.Serialization;
 using GuidesImporter.Application.Helpers;
 using GuidesImporter.Application.Models;
 using GuidesImporter.Application.Options;
-using GuidesImporter.Database.Services.Interfaces;
 using GuidesImporter.Application.Services.Interfaces;
+using GuidesImporter.Database.Services.Interfaces;
 using Microsoft.Extensions.Options;
 
 namespace GuidesImporter.Application.Services;
@@ -67,7 +67,8 @@ public sealed class EvaluationService
         }
 
         var stamp = started.ToString("yyyyMMdd-HHmm", System.Globalization.CultureInfo.InvariantCulture);
-        var resultsFile = Path.Combine(options.ResultsDirectory, $"{stamp}-{Slug(options.RunLabel)}.json").Replace('\\', '/');
+        var resultsFile = Path.Combine(options.ResultsDirectory, $"{stamp}-{Slug(options.RunLabel)}.json")
+            .Replace('\\', '/');
         await WriteJsonAsync(Resolve(resultsFile), results, cancellationToken);
         await WriteJudgementsToVerifyAsync(results, cancellationToken);
 
@@ -87,7 +88,12 @@ public sealed class EvaluationService
         );
         await AppendReportAsync(EvaluationReport.Build(info, results, options.Modes, options.MaxK), cancellationToken);
 
-        logger.LogInformation("Evaluation {Label} finished in {Elapsed}; report: {Report}", options.RunLabel, stopwatch.Elapsed, options.ReportPath);
+        logger.LogInformation(
+            "Evaluation {Label} finished in {Elapsed}; report: {Report}",
+            options.RunLabel,
+            stopwatch.Elapsed,
+            options.ReportPath
+        );
         return results;
     }
 
@@ -115,7 +121,12 @@ public sealed class EvaluationService
                 {
                     var texts = await chunks.GetTextsAsync(result.Answer.CitedChunkIds, cancellationToken);
                     var sources = result.Answer.CitedChunkIds.Where(texts.ContainsKey).Select(id => texts[id]).ToList();
-                    (result.Verdict, result.VerdictReason) = await judge.JudgeAsync(question.Question, result.Answer.Answer, sources, cancellationToken);
+                    (result.Verdict, result.VerdictReason) = await judge.JudgeAsync(
+                        question.Question,
+                        result.Answer.Answer,
+                        sources,
+                        cancellationToken
+                    );
                 }
             }
         }
@@ -136,7 +147,10 @@ public sealed class EvaluationService
     }
 
     /// <summary>Writes a spread of judged answers (supported and unsupported) for a person to check.</summary>
-    private async Task WriteJudgementsToVerifyAsync(List<EvalQuestionResult> results, CancellationToken cancellationToken)
+    private async Task WriteJudgementsToVerifyAsync(
+        List<EvalQuestionResult> results,
+        CancellationToken cancellationToken
+    )
     {
         var judged = results.Where(r => r.Verdict is not null && r.Answer is not null).ToList();
         if (judged.Count == 0)
@@ -161,7 +175,10 @@ public sealed class EvaluationService
             }
         }
 
-        var texts = await chunks.GetTextsAsync(sample.SelectMany(r => r.Answer!.CitedChunkIds).Distinct().ToList(), cancellationToken);
+        var texts = await chunks.GetTextsAsync(
+            sample.SelectMany(r => r.Answer!.CitedChunkIds).Distinct().ToList(),
+            cancellationToken
+        );
         var items = sample
             .Select(r => new JudgementToVerify
             {

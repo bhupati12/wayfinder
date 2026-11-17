@@ -1,0 +1,66 @@
+image:
+  repository: ghcr.io/OWNER/wayfinder-importer-guides
+  tag: ""
+  pullPolicy: IfNotPresent
+
+securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+env:
+  ASPNETCORE_ENVIRONMENT: Production
+  Ingestion__Regions__0: East Asia
+  Ingestion__Regions__1: Southeast Asia
+  Embeddings__BaseUrl: http://ollama.ai.svc.cluster.local:11434/v1/
+
+envFromSecrets:
+  - wayfinder-importer-guides
+
+volumes:
+  - name: dump
+    emptyDir:
+      sizeLimit: 2Gi
+volumeMounts:
+  - name: dump
+    mountPath: /data
+
+migration:
+  enabled: true
+  args: [migrateDatabase]
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+
+cronJobs:
+  - name: ingest-guides
+    args: [ingestGuides]
+    schedule: "0 2 * * 0"
+    concurrencyPolicy: Forbid
+    backoffLimit: 2
+    activeDeadlineSeconds: 3600
+    startingDeadlineSeconds: 900
+    successfulJobsHistoryLimit: 5
+    failedJobsHistoryLimit: 5
+    initContainer:
+      image: curlimages/curl:8.11.1
+      command:
+        - curl
+        - -fsSL
+        - -o
+        - /data/enwikivoyage-latest-pages-articles.xml.bz2
+        - https://dumps.wikimedia.org/enwikivoyage/latest/enwikivoyage-latest-pages-articles.xml.bz2
+    resources:
+      requests: { cpu: "1", memory: 768Mi }
+      limits: { cpu: "2", memory: 1536Mi }
+
+  - name: embed-chunks
+    args: [embedChunks]
+    schedule: "30 4 * * *"
+    concurrencyPolicy: Forbid
+    backoffLimit: 3
+    activeDeadlineSeconds: 14400
+    startingDeadlineSeconds: 900
+    successfulJobsHistoryLimit: 5
+    failedJobsHistoryLimit: 5
+    resources:
+      requests: { cpu: 200m, memory: 256Mi }
+      limits: { cpu: "1", memory: 512Mi }

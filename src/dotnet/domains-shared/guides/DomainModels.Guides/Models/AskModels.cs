@@ -47,6 +47,9 @@ public sealed record AnswerMetadata
     /// <summary>Sources that fitted the token budget and were sent to the model.</summary>
     public required int SourcesUsed { get; init; }
 
+    /// <summary>True when the answer came from the cache; tokens and cost are then 0.</summary>
+    public bool Cached { get; init; }
+
     /// <summary>True when retrieval fell back to keyword search.</summary>
     public bool RetrievalDegraded { get; init; }
 

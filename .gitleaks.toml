@@ -1,0 +1,18 @@
+# Secret scanning for the pre-commit hook and CI. Starts from gitleaks' default rules.
+title = "wayfinder"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Values that are deliberately public: local-only and test credentials"
+regexes = [
+  # docker-compose.yml: a password that only exists on a developer's machine.
+  '''wayfinder_local_only''',
+  # Test API keys in the test projects.
+  '''test-api-key-0123456789''',
+  '''wrong-key-0123456789''',
+]
+paths = [
+  '''src/dotnet/guides/importer-guides/GuidesImporter.Tests/Fixtures/''',
+]

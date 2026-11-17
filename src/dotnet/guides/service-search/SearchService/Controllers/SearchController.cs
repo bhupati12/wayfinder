@@ -1,5 +1,7 @@
 using DomainModels.Guides.Models;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using SearchService.Application.Models;
 using SearchService.Application.Options;
@@ -9,7 +11,9 @@ namespace SearchService.Controllers;
 
 /// <summary>Retrieval over the guide chunks. No business logic here: it validates and delegates.</summary>
 [ApiController]
-[Route("api/search")]
+[Route("api/v1/search")]
+[EnableRateLimiting(Startup.SearchPolicy)]
+[RequestTimeout(Startup.SearchPolicy)]
 public sealed class SearchController : ControllerBase
 {
     private readonly ISearchService search;
@@ -28,6 +32,7 @@ public sealed class SearchController : ControllerBase
     [HttpGet]
     [ProducesResponseType<SearchResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
     public Task<SearchResponse> Get([FromQuery] SearchRequest request, CancellationToken cancellationToken) =>
         search.SearchAsync(request.Query!, request.Mode, request.K ?? options.DefaultK, cancellationToken);

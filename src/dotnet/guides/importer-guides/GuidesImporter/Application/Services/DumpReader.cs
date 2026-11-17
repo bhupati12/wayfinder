@@ -76,7 +76,12 @@ public sealed class DumpReader : IDumpReader
             return null;
         }
 
-        _ = int.TryParse(page.Element(ns + "ns")?.Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var pageNamespace);
+        _ = int.TryParse(
+            page.Element(ns + "ns")?.Value,
+            NumberStyles.AllowLeadingSign,
+            CultureInfo.InvariantCulture,
+            out var pageNamespace
+        );
         var redirect = page.Element(ns + "redirect")?.Attribute("title")?.Value;
 
         var revision = page.Element(ns + "revision");
