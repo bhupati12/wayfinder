@@ -33,6 +33,8 @@ public sealed class SearchApiFactory : WebApplicationFactory<Program>, IAsyncLif
 
     internal ConceptEmbeddingClient Embeddings { get; } = new();
 
+    internal FakeChatClient Chat { get; } = new();
+
     public async Task InitializeAsync()
     {
         await container.StartAsync();
@@ -97,7 +99,11 @@ public sealed class SearchApiFactory : WebApplicationFactory<Program>, IAsyncLif
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Guides", container.GetConnectionString());
-        builder.ConfigureServices(services => services.Replace(ServiceDescriptor.Singleton<IEmbeddingClient>(Embeddings)));
+        builder.ConfigureServices(services =>
+        {
+            services.Replace(ServiceDescriptor.Singleton<IEmbeddingClient>(Embeddings));
+            services.Replace(ServiceDescriptor.Singleton<IChatClient>(Chat));
+        });
     }
 
     private GuidesContext CreateContext()

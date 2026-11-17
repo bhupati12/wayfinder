@@ -13,7 +13,7 @@ namespace Llm.Infrastructure.Http;
 
 /// <summary>
 /// Calls POST {BaseUrl}embeddings in the OpenAI request format. Retries, timeouts and the circuit
-/// breaker live in the HttpClient's resilience handler (see EmbeddingServiceCollectionExtensions),
+/// breaker live in the HttpClient's resilience handler (see LlmServiceCollectionExtensions),
 /// so this class only builds requests and validates responses.
 /// </summary>
 public sealed class OpenAiCompatibleEmbeddingClient : IEmbeddingClient

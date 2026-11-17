@@ -1,4 +1,4 @@
-namespace GuidesImporter.Application.Services.Interfaces;
+namespace Llm.Core.Interfaces;
 
 /// <summary>
 /// Counts model tokens. Chunk limits are in tokens, not characters, because embedding and chat

@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using GuidesDbEntities.DAL;
+using Llm.Core.Interfaces;
 using Llm.Infrastructure.Extensions;
+using Llm.Infrastructure.Services;
 using SearchService.Application.Options;
 using SearchService.Application.Services;
 using SearchService.Application.Services.Interfaces;
@@ -35,7 +37,17 @@ public static class Startup
         services.AddScoped<IChunkSearchRepository, ChunkSearchRepository>();
         services.AddScoped<ISearchService, ChunkSearchService>();
 
-        // Phase 4: chat client and answer service.
+        // Phase 4: grounded answers.
+        services.AddChatClient(builder.Configuration);
+        services
+            .AddOptions<AnswerOptions>()
+            .Bind(builder.Configuration.GetSection(AnswerOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddSingleton<ITokenCounter, TiktokenTokenCounter>();
+        services.AddSingleton<IPromptBuilder, PromptBuilder>();
+        services.AddScoped<IAnswerService, AnswerService>();
+
         // Phase 6: caching, rate limiting, OpenTelemetry.
     }
 

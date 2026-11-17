@@ -1,7 +1,7 @@
-using GuidesImporter.Application.Services.Interfaces;
+using Llm.Core.Interfaces;
 using Microsoft.ML.Tokenizers;
 
-namespace GuidesImporter.Application.Services;
+namespace Llm.Infrastructure.Services;
 
 /// <summary>
 /// Token counts with the cl100k_base encoding (OpenAI text-embedding-3 models). Other providers
