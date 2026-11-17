@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GuidesDbEntities.DAL;
@@ -15,6 +16,27 @@ public static class GuidesDbServiceCollectionExtensions
     )
     {
         services.AddDbContext<GuidesContext>(options => Configure(options, connectionString));
+        return services;
+    }
+
+    /// <summary>
+    /// Registers <see cref="GuidesContext"/>, reading ConnectionStrings:Guides when the context is
+    /// first created rather than at registration, so hosts and tests can supply it late.
+    /// </summary>
+    public static IServiceCollection AddGuidesDb(this IServiceCollection services)
+    {
+        services.AddDbContext<GuidesContext>(
+            (provider, options) =>
+            {
+                var connectionString =
+                    provider.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName)
+                    ?? throw new InvalidOperationException(
+                        $"Connection string '{ConnectionStringName}' is not set (user secrets in Development, "
+                            + "the ConnectionStrings__Guides environment variable elsewhere)."
+                    );
+                Configure(options, connectionString);
+            }
+        );
         return services;
     }
 

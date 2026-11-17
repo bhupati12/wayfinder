@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using NpgsqlTypes;
 using Pgvector;
 
 #nullable disable
@@ -136,6 +137,13 @@ namespace GuidesDbEntities.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("title");
 
+                    b.Property<NpgsqlTsVector>("TitleVector")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("tsvector")
+                        .HasColumnName("title_vector")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
+                        .HasAnnotation("Npgsql:TsVectorProperties", new[] { "Title" });
+
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(2048)
@@ -151,6 +159,11 @@ namespace GuidesDbEntities.Migrations
 
                     b.HasIndex("Title")
                         .HasDatabaseName("ix_guide_articles_title");
+
+                    b.HasIndex("TitleVector")
+                        .HasDatabaseName("ix_guide_articles_title_vector");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("TitleVector"), "GIN");
 
                     b.ToTable("guide_articles", (string)null);
                 });
@@ -198,6 +211,13 @@ namespace GuidesDbEntities.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("position");
 
+                    b.Property<NpgsqlTsVector>("SearchVector")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("tsvector")
+                        .HasColumnName("search_vector")
+                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
+                        .HasAnnotation("Npgsql:TsVectorProperties", new[] { "SectionHeading", "Text" });
+
                     b.Property<string>("SectionHeading")
                         .IsRequired()
                         .HasMaxLength(1024)
@@ -226,6 +246,11 @@ namespace GuidesDbEntities.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Embedding"), "hnsw");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Embedding"), new[] { "vector_cosine_ops" });
+
+                    b.HasIndex("SearchVector")
+                        .HasDatabaseName("ix_guide_chunks_search_vector");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
 
                     b.HasIndex("ArticleId", "Position")
                         .IsUnique()

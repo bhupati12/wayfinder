@@ -1,3 +1,12 @@
+using System.Text.Json.Serialization;
+using GuidesDbEntities.DAL;
+using Llm.Infrastructure.Extensions;
+using SearchService.Application.Options;
+using SearchService.Application.Services;
+using SearchService.Application.Services.Interfaces;
+using SearchService.Database.Services;
+using SearchService.Database.Services.Interfaces;
+
 namespace SearchService;
 
 public static class Startup
@@ -6,16 +15,34 @@ public static class Startup
     {
         var services = builder.Services;
 
-        services.AddControllers();
+        services
+            .AddControllers()
+            .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         services.AddHealthChecks();
+        services.AddProblemDetails();
+        services.AddExceptionHandler<LlmUnavailableExceptionHandler>();
 
-        // Phase 3: DbContext, search services (vector, keyword, hybrid).
+        // Database: ConnectionStrings:Guides from user secrets (Development) or the environment.
+        services.AddGuidesDb();
+
+        // Phase 3: search. Queries are embedded by the same model that embedded the chunks.
+        services.AddEmbeddingClient(builder.Configuration);
+        services
+            .AddOptions<SearchOptions>()
+            .Bind(builder.Configuration.GetSection(SearchOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddScoped<IChunkSearchRepository, ChunkSearchRepository>();
+        services.AddScoped<ISearchService, ChunkSearchService>();
+
         // Phase 4: chat client and answer service.
-        // Phase 6: caching, rate limiting, OpenTelemetry, exception handling.
+        // Phase 6: caching, rate limiting, OpenTelemetry.
     }
 
     public static void Configure(WebApplication app)
     {
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
         app.MapControllers();
         app.MapHealthChecks("/healthz");
     }

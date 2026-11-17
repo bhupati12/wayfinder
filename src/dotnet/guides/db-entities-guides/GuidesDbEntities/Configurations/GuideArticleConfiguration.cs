@@ -20,6 +20,11 @@ public class GuideArticleConfiguration : IEntityTypeConfiguration<GuideArticle>
         builder.Property(a => a.ProcessingSignature).HasMaxLength(64).IsFixedLength().IsRequired();
 
         builder
+            .HasGeneratedTsVectorColumn(a => a.TitleVector!, GuideChunkConfiguration.FullTextConfiguration, a => new { a.Title })
+            .HasIndex(a => a.TitleVector)
+            .HasMethod("GIN");
+
+        builder
             .HasMany(a => a.Chunks)
             .WithOne(c => c.Article)
             .HasForeignKey(c => c.ArticleId)

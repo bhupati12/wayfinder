@@ -12,6 +12,9 @@ public class GuideChunkConfiguration : IEntityTypeConfiguration<GuideChunk>
     /// </summary>
     public const int EmbeddingDimensions = 768;
 
+    /// <summary>PostgreSQL text search configuration used for keyword search.</summary>
+    public const string FullTextConfiguration = "english";
+
     public void Configure(EntityTypeBuilder<GuideChunk> builder)
     {
         builder.ToTable("guide_chunks");
@@ -27,6 +30,12 @@ public class GuideChunkConfiguration : IEntityTypeConfiguration<GuideChunk>
         builder.Property(c => c.Embedding).HasColumnType($"vector({EmbeddingDimensions})");
         builder.Property(c => c.EmbeddingModel).HasMaxLength(200);
         builder.Property(c => c.EmbeddedContentHash).HasMaxLength(64).IsFixedLength();
+
+        // Keyword search: a stored generated tsvector (English stemming) with a GIN index.
+        builder
+            .HasGeneratedTsVectorColumn(c => c.SearchVector!, FullTextConfiguration, c => new { c.SectionHeading, c.Text })
+            .HasIndex(c => c.SearchVector)
+            .HasMethod("GIN");
 
         // Approximate nearest-neighbour index for cosine distance (the <=> operator). HNSW builds a
         // layered proximity graph: queries are fast and recall is high, at the price of slower
