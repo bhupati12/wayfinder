@@ -200,6 +200,42 @@ public sealed class HardeningTests : IClassFixture<SearchApiFactory>
         Assert.Contains("/api/v1/ask/stream", body);
     }
 
+    [Fact]
+    public async Task OpenApi_document_asks_for_the_api_key_on_ask_only()
+    {
+        using var document = JsonDocument.Parse(await factory.CreateClient().GetStringAsync("/openapi/v1.json"));
+        var root = document.RootElement;
+        var paths = root.GetProperty("paths");
+
+        var scheme = root.GetProperty("components").GetProperty("securitySchemes").GetProperty("ApiKey");
+        Assert.Equal("apiKey", scheme.GetProperty("type").GetString());
+        Assert.Equal("header", scheme.GetProperty("in").GetString());
+        Assert.Equal("X-Api-Key", scheme.GetProperty("name").GetString());
+
+        Assert.True(paths.GetProperty("/api/v1/ask").GetProperty("post").TryGetProperty("security", out var ask));
+        Assert.True(ask[0].TryGetProperty("ApiKey", out _));
+        Assert.True(paths.GetProperty("/api/v1/ask/stream").GetProperty("post").TryGetProperty("security", out _));
+        Assert.False(paths.GetProperty("/api/v1/search").GetProperty("get").TryGetProperty("security", out _));
+    }
+
+    [Fact]
+    public async Task Swagger_ui_is_off_unless_switched_on()
+    {
+        var off = await factory.CreateClient().GetAsync("/swagger/index.html");
+        Assert.Equal(HttpStatusCode.NotFound, off.StatusCode);
+
+        using var host = factory.WithWebHostBuilder(b => b.UseSetting("ApiDocs:SwaggerUi", "true"));
+        var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var page = await client.GetAsync("/swagger/index.html");
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        Assert.Contains("swagger-ui", await page.Content.ReadAsStringAsync());
+
+        var root = await client.GetAsync("/");
+        Assert.Equal(HttpStatusCode.Redirect, root.StatusCode);
+        Assert.Equal("/swagger", root.Headers.Location?.OriginalString);
+    }
+
     private sealed class ThrowingSearch : ISearchService
     {
         public Task<SearchResponse> SearchAsync(
