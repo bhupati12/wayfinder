@@ -1,0 +1,68 @@
+# Values for a generic web-service chart (Deployment + Service + HPA). Secrets are not here:
+# they are Kubernetes Secrets created by the platform (for example External Secrets) and read
+# through envFrom / secretKeyRef.
+image:
+  repository: ghcr.io/OWNER/wayfinder-service-search
+  tag: "" # set by the pipeline to the commit SHA
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+service:
+  port: 80
+  targetPort: 8080
+
+securityContext:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+probes:
+  startup:
+    httpGet: { path: /healthz/live, port: 8080 }
+    periodSeconds: 5
+    failureThreshold: 24
+  liveness:
+    httpGet: { path: /healthz/live, port: 8080 }
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    # PostgreSQL must answer; Redis being down only degrades (the pod stays ready).
+    httpGet: { path: /healthz/ready, port: 8080 }
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+env:
+  ASPNETCORE_ENVIRONMENT: Production
+  Embeddings__BaseUrl: http://ollama.ai.svc.cluster.local:11434/v1/
+  Chat__BaseUrl: http://ollama.ai.svc.cluster.local:11434/v1/
+  Database__MaxPoolSize: "10"
+  RateLimiting__AskPermitsPerMinute: "20"
+  CostCap__DailyTokenCap: "500000"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability.svc.cluster.local:4317
+  OTEL_SERVICE_NAME: wayfinder-service-search
+
+# ConnectionStrings__Guides, ConnectionStrings__Redis, Auth__ApiKeys__0__Name/Key, Sentry__Dsn
+envFromSecrets:
+  - wayfinder-service-search
+
+autoscaling:
+  enabled: false
+
+# .NET writes temporary files; the root filesystem is read-only.
+volumes:
+  - name: tmp
+    emptyDir: {}
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp

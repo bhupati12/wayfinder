@@ -1,0 +1,71 @@
+# Values for a generic CronJob chart: one Kubernetes CronJob per entry, all running the importer
+# image with the job name as the argument (dotnet GuidesImporter.dll <job>).
+image:
+  repository: ghcr.io/OWNER/wayfinder-importer-guides
+  tag: ""
+  pullPolicy: IfNotPresent
+
+securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+env:
+  ASPNETCORE_ENVIRONMENT: Production
+  Ingestion__Regions__0: East Asia
+  Ingestion__Regions__1: Southeast Asia
+  Embeddings__BaseUrl: http://ollama.ai.svc.cluster.local:11434/v1/
+
+# ConnectionStrings__Guides (and Embeddings__ApiKey for a hosted provider)
+envFromSecrets:
+  - wayfinder-importer-guides
+
+# The dump is downloaded to this volume by an init container before ingestGuides runs.
+volumes:
+  - name: dump
+    emptyDir:
+      sizeLimit: 2Gi
+volumeMounts:
+  - name: dump
+    mountPath: /data
+
+# Migrations run as a Helm pre-upgrade hook, before any CronJob uses a new schema.
+migration:
+  enabled: true
+  args: [migrateDatabase]
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+
+cronJobs:
+  - name: ingest-guides
+    args: [ingestGuides]
+    schedule: "0 3 * * 0" # Sundays 03:00 UTC; the dump is refreshed about twice a month
+    concurrencyPolicy: Forbid
+    backoffLimit: 2
+    activeDeadlineSeconds: 3600
+    startingDeadlineSeconds: 600
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+    initContainer:
+      image: curlimages/curl:8.11.1
+      command:
+        - curl
+        - -fsSL
+        - -o
+        - /data/enwikivoyage-latest-pages-articles.xml.bz2
+        - https://dumps.wikimedia.org/enwikivoyage/latest/enwikivoyage-latest-pages-articles.xml.bz2
+    resources:
+      requests: { cpu: 500m, memory: 512Mi }
+      limits: { cpu: "1", memory: 1Gi }
+
+  - name: embed-chunks
+    args: [embedChunks]
+    schedule: "0 5 * * *" # daily; embeds only new or changed chunks, so most runs are short
+    concurrencyPolicy: Forbid
+    backoffLimit: 2
+    activeDeadlineSeconds: 14400 # a full re-embed on a CPU model takes about three hours
+    startingDeadlineSeconds: 600
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 500m, memory: 512Mi }

@@ -1,0 +1,93 @@
+{{pagebanner|Aioi Wikivoyage banner.jpg|Caption=Aioi Peron Festival}}
+'''Aioi''' (相生) is a small port city in western [[Hyogo]].
+
+==Understand==
+===Tourist information site===
+The local tourist association has a [https://aioi.in/ Japanese-only guide site]. [https://aioi.in/pamphlet-2/ Its Pamphlet section] has a guide map in English.
+
+==Get in==
+{{Mapframe|zoom=auto}}
+{{mapshape}}
+
+Aioi Station is served by the Sanyo Shinkansen. The JR Sanyo Main Line and the Ako Line also run through Aioi.
+
+* {{go
+| name=Aioi Station | alt= | url= | email=
+| address= | lat= | long= | directions=
+| phone= | tollfree=
+| hours= | price=
+| wikidata=Q1132350
+| lastedit=2023-02-11
+| content=
+}}
+* {{go
+| name=Nishi-Aioi Station | alt= | url= | email=
+| address= | lat= | long= | directions=
+| phone= | tollfree=
+| hours= | price=
+| wikidata=Q5366842
+| lastedit=2023-02-11
+| content=
+}}
+
+==Get around==
+
+==See==
+* {{see
+| name=Kanjōsan Castle Ruins | alt=感状山城跡 | url=https://www.city.aioi.lg.jp/soshiki/shogaigakushu/sigtseeing2.html | email=
+| address= | lat= | long= | directions=
+| phone= | tollfree=
+| hours= | price=
+| wikidata=Q11494967
+| lastedit=2023-02-11
+| content=Remains of a Muromachi period castle built in the 13th century.
+}}
+
+==Do==
+
+==Buy==
+
+==Eat==
+
+==Drink==
+
+==Sleep==
+
+==Connect==
+
+==Go next==
+* [[Ako]]
+* [[Tatsuno]]
+* [[Kamigori]]
+* [[Taishi]]
+* [[Himeji]]
+* [[Bizen]]
+* [[Setouchi]]
+* [[Wake]]
+* [[Akaiwa]]
+
+{{routebox
+| image1=Sanyo Shinkansen icon.png
+| imagesize1=100
+| directionl1=W
+| majorl1=[[Hiroshima]]
+| minorl1=[[Okayama]]
+| directionr1=E
+| majorr1=[[Osaka|Shin-Osaka]]
+| minorr1=[[Himeji]]
+
+| image2=JR Sanyo icon.png
+| imagesize2=100
+| directionl2=W
+| majorl2=[[Okayama]]
+| minorl2=[[Ako|Une (Ako)]]
+| directionr2=E
+| majorr2=[[Kobe]]
+| minorr2=[[Tatsuno]]
+
+}}
+
+{{geo|34.8000|134.4667}}
+
+{{IsPartOf|Hyogo}}
+{{outlinecity}}

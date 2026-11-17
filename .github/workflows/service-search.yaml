@@ -1,0 +1,109 @@
+name: service-search
+
+# Runs only when the search service or code it depends on changes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/dotnet/guides/service-search/**"
+      - "src/dotnet/guides/db-entities-guides/**"
+      - "src/dotnet/domains-shared/**"
+      - "src/dotnet/connector-llm/**"
+      - "src/dotnet/Directory.Build.props"
+      - ".github/workflows/service-search.yaml"
+      - "helm/service-search/**"
+  pull_request:
+    paths:
+      - "src/dotnet/guides/service-search/**"
+      - "src/dotnet/guides/db-entities-guides/**"
+      - "src/dotnet/domains-shared/**"
+      - "src/dotnet/connector-llm/**"
+      - "src/dotnet/Directory.Build.props"
+      - ".github/workflows/service-search.yaml"
+      - "helm/service-search/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-search-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore tools and packages
+        working-directory: src/dotnet
+        run: |
+          dotnet tool restore
+          dotnet restore guides/service-search/SearchService.Tests/SearchService.Tests.csproj
+
+      - name: Check formatting (CSharpier)
+        run: dotnet csharpier check src/dotnet/guides/service-search src/dotnet/guides/db-entities-guides src/dotnet/domains-shared src/dotnet/connector-llm
+
+      - name: Build (warnings are errors)
+        working-directory: src/dotnet
+        run: dotnet build guides/service-search/SearchService.Tests/SearchService.Tests.csproj --no-restore --configuration Release
+
+      # Integration tests start PostgreSQL with Testcontainers; the runner's Docker engine hosts it.
+      - name: Test with coverage
+        working-directory: src/dotnet
+        run: >
+          dotnet test guides/service-search/SearchService.Tests/SearchService.Tests.csproj
+          --no-build --configuration Release
+          --collect:"XPlat Code Coverage" --results-directory ../../TestResults
+          --logger "trx;LogFileName=service-search.trx"
+
+      - name: Coverage report
+        if: always()
+        run: |
+          dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:coverage -reporttypes:"MarkdownSummaryGithub;Cobertura"
+          cat coverage/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: service-search-test-results
+          path: |
+            TestResults
+            coverage
+
+  image:
+    name: Build image
+    needs: [secrets, build-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: src/dotnet
+          file: src/dotnet/guides/service-search/Dockerfile
+          tags: wayfinder/service-search:${{ github.sha }}
+          # Push once a registry is configured: set push to true and log in first.
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

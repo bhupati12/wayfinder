@@ -1,0 +1,11 @@
+# Reviewers are requested automatically for changes to these paths.
+# Replace OWNER with your GitHub username (or a team such as @org/team) before pushing:
+# GitHub ignores CODEOWNERS lines whose owner does not exist.
+
+# *                                             @OWNER
+# /src/dotnet/guides/service-search/            @OWNER
+# /src/dotnet/guides/importer-guides/           @OWNER
+# /src/dotnet/guides/db-entities-guides/        @OWNER
+# /src/dotnet/connector-llm/                    @OWNER
+# /helm/                                        @OWNER
+# /.github/                                     @OWNER

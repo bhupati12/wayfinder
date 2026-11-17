@@ -1,0 +1,74 @@
+# Production: several replicas behind the HPA. Rate limits are per instance (in memory), so the
+# effective limit per key is replicas x AskPermitsPerMinute; move the limiter to Redis to share it.
+image:
+  repository: ghcr.io/OWNER/wayfinder-service-search
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 3
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 384Mi
+  limits:
+    cpu: "2"
+    memory: 768Mi
+
+service:
+  port: 80
+  targetPort: 8080
+
+securityContext:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+probes:
+  startup:
+    httpGet: { path: /healthz/live, port: 8080 }
+    periodSeconds: 5
+    failureThreshold: 24
+  liveness:
+    httpGet: { path: /healthz/live, port: 8080 }
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    httpGet: { path: /healthz/ready, port: 8080 }
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+podDisruptionBudget:
+  minAvailable: 2
+
+env:
+  ASPNETCORE_ENVIRONMENT: Production
+  Embeddings__BaseUrl: http://ollama.ai.svc.cluster.local:11434/v1/
+  Chat__BaseUrl: http://ollama.ai.svc.cluster.local:11434/v1/
+  # 3 replicas x 20 = 60 of PostgreSQL's 100 connections; the rest is for jobs and admin.
+  Database__MaxPoolSize: "20"
+  RateLimiting__AskPermitsPerMinute: "10"
+  RateLimiting__SearchPermitsPerMinute: "300"
+  CostCap__DailyCostCapUsd: "5"
+  CostCap__DailyTokenCap: "2000000"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability.svc.cluster.local:4317
+  OTEL_SERVICE_NAME: wayfinder-service-search
+
+envFromSecrets:
+  - wayfinder-service-search
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+
+# .NET writes temporary files; the root filesystem is read-only.
+volumes:
+  - name: tmp
+    emptyDir: {}
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp

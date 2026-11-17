@@ -17,9 +17,7 @@ public class JobRunner
 
     public async Task<int> RunAsync(string jobName, CancellationToken cancellationToken)
     {
-        var job = jobs.FirstOrDefault(j =>
-            string.Equals(j.Name, jobName, StringComparison.OrdinalIgnoreCase)
-        );
+        var job = jobs.FirstOrDefault(j => string.Equals(j.Name, jobName, StringComparison.OrdinalIgnoreCase));
 
         if (job is null)
         {
