@@ -10,6 +10,7 @@ using GuidesImporter.Database.Services;
 using GuidesImporter.Database.Services.Interfaces;
 using Llm.Infrastructure.Extensions;
 using Llm.Infrastructure.Options;
+using Microsoft.Extensions.Options;
 
 namespace GuidesImporter;
 
@@ -69,11 +70,35 @@ public static class Startup
         services.AddScoped<IChunkEmbeddingRepository, ChunkEmbeddingRepository>();
         services.AddScoped<IEmbeddingRunRepository, EmbeddingRunRepository>();
 
+        // Phase 5: evaluation through the SearchService API, with a local LLM judge.
+        services
+            .AddOptions<EvalOptions>()
+            .Bind(builder.Configuration.GetSection(EvalOptions.SectionName))
+            .ValidateDataAnnotations();
+        services.AddHttpClient<IEvalApiClient, EvalApiClient>(
+            (provider, client) =>
+            {
+                var options = provider.GetRequiredService<IOptions<EvalOptions>>().Value;
+                client.BaseAddress = new Uri(options.SearchServiceBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(options.RequestTimeoutSeconds);
+                if (!string.IsNullOrEmpty(options.ApiKey))
+                {
+                    client.DefaultRequestHeaders.Add("X-Api-Key", options.ApiKey);
+                }
+            }
+        );
+        services.AddChatClient(builder.Configuration);
+        services.AddScoped<IAnswerJudge, LlmAnswerJudge>();
+        services.AddScoped<IChunkTextRepository, ChunkTextRepository>();
+        services.AddScoped<EvaluationService>();
+
         // Jobs: register each ICronJob here, then it can be run by name from the command line.
         services.AddScoped<JobRunner>();
         services.AddScoped<ICronJob, MigrateDatabaseJob>();
         services.AddScoped<ICronJob, IngestGuidesJob>();
         services.AddScoped<ICronJob, EmbedChunksJob>();
+        services.AddScoped<ICronJob, RunEvalJob>();
+        services.AddScoped<ICronJob, ScoreJudgeAgreementJob>();
     }
 
     public static void Configure(WebApplication app)
